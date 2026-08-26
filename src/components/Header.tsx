@@ -3,9 +3,15 @@ import { Info, X, PhoneCall, ShieldAlert, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext.tsx';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onOpenProfile?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
   const [showInfo, setShowInfo] = useState(false);
   const { userProfile, signOut } = useAuth();
+
+  const avatarUrl = userProfile?.profilePictureUrl || (userProfile?.userId ? `https://api.dicebear.com/9.x/avataaars/svg?seed=${userProfile.userId}` : null);
 
   return (
     <>
@@ -32,11 +38,26 @@ export const Header: React.FC = () => {
         <div className="flex items-center gap-2">
           {/* Active User Badge on mobile */}
           {userProfile && (
-            <div className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-gray-200 shadow-2xs">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-              <span className="text-[10px] font-bold text-gray-700 max-w-[80px] truncate">
-                {userProfile.authType === 'google' ? userProfile.name : 'Guest'}
-              </span>
+            <div className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-white rounded-full border border-gray-200 shadow-2xs">
+              <button
+                onClick={onOpenProfile}
+                className="flex items-center gap-1 text-left cursor-pointer"
+                title="Open Profile"
+              >
+                {avatarUrl ? (
+                  <img
+                    src={avatarUrl}
+                    alt="User Avatar"
+                    className="w-5 h-5 rounded-full object-cover border border-teal-400"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
+                )}
+                <span className="text-[10px] font-bold text-gray-700 max-w-[65px] truncate">
+                  {userProfile.authType === 'google' ? userProfile.name : (userProfile.name || 'Guest')}
+                </span>
+              </button>
               <button
                 onClick={signOut}
                 title="Sign out"

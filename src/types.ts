@@ -1,14 +1,59 @@
 export type TabType = 'home' | 'trahigpt' | 'sos' | 'donate' | 'profile';
 
+export type DonorTabType = 'back' | 'map' | 'donate' | 'history' | 'profile';
+
+export interface DonorProfile {
+  id?: string;
+  userId: string;
+  name: string;
+  email: string;
+  phone: string;
+  city?: string;
+  state?: string;
+  preferredCauses?: string[];
+  createdAt: number;
+  updatedAt?: number;
+}
+
 export type AuthType = 'google' | 'anonymous';
 
+export interface UserLocationDetails {
+  latitude: number;
+  longitude: number;
+  district: string;
+  block: string;
+  pincode: string;
+  state: string;
+}
+
 export interface UserProfile {
-  uid: string;
+  userId: string;
+  uid?: string; // backwards compatibility alias for userId
   name: string;
+  age?: number | string;
+  gender?: string;
+  bloodGroup?: string;
+  profilePictureUrl?: string;
   phone?: string;
   email?: string;
-  authType: AuthType;
+  authType?: AuthType;
+  location?: UserLocationDetails;
+  profileCompleted: boolean;
   createdAt: number;
+  updatedAt?: number;
+}
+
+export interface UserLocation {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  city?: string;
+  state?: string;
+  district?: string;
+  block?: string;
+  postcode?: string;
+  formattedAddress: string;
+  lastUpdated: number;
 }
 
 export type SOSStatus = 'active' | 'responding' | 'resolved' | 'cancelled';

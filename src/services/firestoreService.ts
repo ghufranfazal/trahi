@@ -12,7 +12,7 @@ import {
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase.ts';
-import { SOSReport, Donation, UserProfile, DonationStatus } from '../types.ts';
+import { SOSReport, Donation, UserProfile, DonationStatus, DonorProfile } from '../types.ts';
 
 // Initial dummy donations to seed the Firestore database
 export const SEED_DONATIONS: Omit<Donation, 'id'>[] = [
@@ -93,22 +93,159 @@ export async function seedDonationsIfEmpty(): Promise<void> {
   }
 }
 
-// User Profile Firestore Sync
-export async function syncUserProfile(profile: UserProfile): Promise<void> {
+// User Profile Firestore Sync & Fetch
+export async function fetchUserProfile(userId: string): Promise<UserProfile | null> {
   try {
-    const userDocRef = doc(db, 'users', profile.uid);
+    const userDocRef = doc(db, 'users', userId);
+    const snap = await getDoc(userDocRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        userId: data.userId || userId,
+        uid: userId,
+        name: data.name || 'Trahi User',
+        age: data.age !== undefined ? data.age : '',
+        gender: data.gender || '',
+        bloodGroup: data.bloodGroup || '',
+        profilePictureUrl: data.profilePictureUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${userId}`,
+        phone: data.phone || '',
+        email: data.email || '',
+        authType: data.authType || 'anonymous',
+        location: data.location || {
+          latitude: 0,
+          longitude: 0,
+          district: '',
+          block: '',
+          pincode: '',
+          state: ''
+        },
+        profileCompleted: Boolean(data.profileCompleted),
+        createdAt: data.createdAt || Date.now(),
+        updatedAt: data.updatedAt || undefined,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch user profile from Firestore:", error);
+    return null;
+  }
+}
+
+// User Profile Firestore Initial Sync (called after auth state is established)
+export async function syncUserProfile(profile: Partial<UserProfile> & { userId: string; uid?: string }): Promise<UserProfile> {
+  const effectiveUid = profile.userId || profile.uid || '';
+  try {
+    const userDocRef = doc(db, 'users', effectiveUid);
     const existing = await getDoc(userDocRef);
-    if (!existing.exists()) {
-      await setDoc(userDocRef, {
-        name: profile.name,
+
+    if (existing.exists()) {
+      const data = existing.data();
+      return {
+        userId: effectiveUid,
+        uid: effectiveUid,
+        name: data.name || profile.name || 'Trahi User',
+        age: data.age !== undefined ? data.age : '',
+        gender: data.gender || '',
+        bloodGroup: data.bloodGroup || '',
+        profilePictureUrl: data.profilePictureUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${effectiveUid}`,
+        phone: data.phone || profile.phone || '',
+        email: data.email || profile.email || '',
+        authType: data.authType || profile.authType || 'anonymous',
+        location: data.location || profile.location || {
+          latitude: 0,
+          longitude: 0,
+          district: '',
+          block: '',
+          pincode: '',
+          state: ''
+        },
+        profileCompleted: Boolean(data.profileCompleted),
+        createdAt: data.createdAt || Date.now(),
+        updatedAt: data.updatedAt || undefined,
+      };
+    } else {
+      const defaultProfile: UserProfile = {
+        userId: effectiveUid,
+        uid: effectiveUid,
+        name: profile.name || 'Trahi User',
+        age: profile.age || '',
+        gender: profile.gender || '',
+        bloodGroup: profile.bloodGroup || '',
+        profilePictureUrl: profile.profilePictureUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${effectiveUid}`,
         phone: profile.phone || '',
-        authType: profile.authType,
-        createdAt: profile.createdAt || Date.now()
+        email: profile.email || '',
+        authType: profile.authType || 'anonymous',
+        location: profile.location || {
+          latitude: 0,
+          longitude: 0,
+          district: '',
+          block: '',
+          pincode: '',
+          state: ''
+        },
+        profileCompleted: false, // Default false
+        createdAt: profile.createdAt || Date.now(),
+      };
+
+      await setDoc(userDocRef, {
+        userId: effectiveUid,
+        name: defaultProfile.name,
+        age: defaultProfile.age ? Number(defaultProfile.age) : 0,
+        gender: defaultProfile.gender,
+        bloodGroup: defaultProfile.bloodGroup,
+        profilePictureUrl: defaultProfile.profilePictureUrl,
+        location: defaultProfile.location,
+        profileCompleted: false,
+        authType: defaultProfile.authType,
+        createdAt: defaultProfile.createdAt,
       });
+
+      return defaultProfile;
     }
   } catch (error) {
     console.error("Failed to sync user profile in Firestore:", error);
+    return {
+      userId: effectiveUid,
+      uid: effectiveUid,
+      name: profile.name || 'Trahi User',
+      profileCompleted: false,
+      createdAt: Date.now(),
+      authType: profile.authType || 'anonymous',
+    };
   }
+}
+
+// Explicitly save/update user profile in Firestore
+export async function saveUserProfileToFirestore(
+  profileData: Partial<UserProfile> & { userId: string }
+): Promise<void> {
+  const userDocRef = doc(db, 'users', profileData.userId);
+  
+  const payload: any = {
+    userId: profileData.userId,
+    name: profileData.name || 'Trahi User',
+    age: profileData.age ? Number(profileData.age) : 0,
+    gender: profileData.gender || '',
+    bloodGroup: profileData.bloodGroup || '',
+    profilePictureUrl: profileData.profilePictureUrl || `https://api.dicebear.com/9.x/avataaars/svg?seed=${profileData.userId}`,
+    location: {
+      latitude: profileData.location?.latitude ? Number(profileData.location.latitude) : 0,
+      longitude: profileData.location?.longitude ? Number(profileData.location.longitude) : 0,
+      district: profileData.location?.district || '',
+      block: profileData.location?.block || '',
+      pincode: profileData.location?.pincode || '',
+      state: profileData.location?.state || '',
+    },
+    profileCompleted: true,
+    updatedAt: Date.now(),
+  };
+
+  if (profileData.phone !== undefined) payload.phone = profileData.phone;
+  if (profileData.email !== undefined) payload.email = profileData.email;
+  if (profileData.authType !== undefined) payload.authType = profileData.authType;
+
+  // Use setDoc with merge: true to avoid deleting createdAt if document exists
+  await setDoc(userDocRef, payload, { merge: true });
 }
 
 // Create an SOS distress report in Firestore
@@ -138,4 +275,65 @@ export async function updateDonationStatus(donationId: string, newStatus: Donati
   await updateDoc(donationRef, {
     status: newStatus
   });
+}
+
+// Realtime subscription to donations collection
+export function subscribeToDonations(callback: (donations: Donation[]) => void): () => void {
+  seedDonationsIfEmpty();
+  const donationsRef = collection(db, 'donations');
+  const q = query(donationsRef, orderBy('timestamp', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const items: Donation[] = [];
+    snapshot.forEach((doc) => {
+      items.push({ id: doc.id, ...doc.data() } as Donation);
+    });
+    callback(items);
+  }, (err) => {
+    console.error("Error subscribing to donations:", err);
+  });
+}
+
+// Fetch verified donor profile from Firestore
+export async function fetchDonorProfile(userId: string): Promise<DonorProfile | null> {
+  try {
+    const donorDocRef = doc(db, 'donors', userId);
+    const snap = await getDoc(donorDocRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      return {
+        id: snap.id,
+        userId: data.userId || userId,
+        name: data.name || '',
+        email: data.email || '',
+        phone: data.phone || '',
+        city: data.city || '',
+        state: data.state || '',
+        preferredCauses: data.preferredCauses || [],
+        createdAt: data.createdAt || Date.now(),
+        updatedAt: data.updatedAt || undefined,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error("Failed to fetch donor profile from Firestore:", error);
+    return null;
+  }
+}
+
+// Save or update verified donor profile in Firestore
+export async function saveDonorProfile(donor: DonorProfile): Promise<void> {
+  const donorDocRef = doc(db, 'donors', donor.userId);
+  const payload: any = {
+    userId: donor.userId,
+    name: donor.name,
+    email: donor.email,
+    phone: donor.phone,
+    city: donor.city || '',
+    state: donor.state || '',
+    preferredCauses: donor.preferredCauses || [],
+    createdAt: donor.createdAt || Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  await setDoc(donorDocRef, payload, { merge: true });
 }

@@ -106,9 +106,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
             <div className="w-9 h-9 rounded-full border-2 border-[#0F9D8F] overflow-hidden bg-white shadow-xs shrink-0">
               <img
                 src={
-                  userProfile?.authType === 'google'
-                    ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || 'Google'}`
-                    : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+                  userProfile?.profilePictureUrl ||
+                  `https://api.dicebear.com/9.x/avataaars/svg?seed=${userProfile?.userId || userProfile?.uid || 'trahi'}`
                 }
                 alt="User profile"
                 className="w-full h-full object-cover"
@@ -119,9 +118,14 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
               <p className="text-xs font-bold text-gray-900 truncate">
                 {userProfile?.name || 'Guest User'}
               </p>
-              <span className="text-[10px] font-medium text-emerald-600 block truncate">
-                {userProfile?.authType === 'google' ? '✓ Google Donor' : '⚡ Anonymous SOS'}
-              </span>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] font-medium text-emerald-600 block truncate">
+                  {userProfile?.authType === 'google' ? '✓ Google Donor' : '⚡ Anonymous SOS'}
+                </span>
+                {userProfile?.profileCompleted && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" title="Profile Complete" />
+                )}
+              </div>
             </div>
           </div>
 

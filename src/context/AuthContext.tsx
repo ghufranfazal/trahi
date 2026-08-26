@@ -7,17 +7,25 @@ import {
   onAuthStateChanged 
 } from 'firebase/auth';
 import { auth, googleProvider } from '../firebase.ts';
-import { UserProfile, AuthType } from '../types.ts';
-import { syncUserProfile } from '../services/firestoreService.ts';
+import { UserProfile, DonorProfile, AuthType } from '../types.ts';
+import { syncUserProfile, fetchDonorProfile, saveDonorProfile } from '../services/firestoreService.ts';
 
 interface AuthContextType {
   user: User | null;
   userProfile: UserProfile | null;
+  donorProfile: DonorProfile | null;
   loading: boolean;
-  signInWithGoogle: () => Promise<void>;
+  donorLoading: boolean;
+  isGoogleUser: boolean;
+  signInWithGoogle: () => Promise<User | null>;
   signInAsGuest: () => Promise<void>;
-  signInAsDonor: (donorName?: string, donorEmail?: string) => Promise<void>;
+  signInAsDonorFallback: (donorName?: string, donorEmail?: string) => Promise<User | null>;
   signOut: () => Promise<void>;
+  updateUserProfileState: (newProfile: UserProfile) => void;
+  updateDonorProfileState: (newDonor: DonorProfile) => void;
+  refreshUserProfile: () => Promise<void>;
+  refreshDonorProfile: () => Promise<DonorProfile | null>;
+  saveDonor: (donorData: DonorProfile) => Promise<void>;
   authError: string | null;
   isDomainError: boolean;
   clearAuthError: () => void;
@@ -28,54 +36,112 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [donorProfile, setDonorProfile] = useState<DonorProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [donorLoading, setDonorLoading] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isDomainError, setIsDomainError] = useState<boolean>(false);
 
+  const loadProfile = async (currentUser: User) => {
+    const isAnon = currentUser.isAnonymous;
+    const storedDonorName = sessionStorage.getItem(`donor_name_${currentUser.uid}`);
+    const storedAuthType = sessionStorage.getItem(`auth_type_${currentUser.uid}`);
+
+    const baseProfile: Partial<UserProfile> & { userId: string } = {
+      userId: currentUser.uid,
+      uid: currentUser.uid,
+      name: currentUser.displayName || storedDonorName || (isAnon ? `Guest SOS #${currentUser.uid.slice(0, 5)}` : 'Trahi User'),
+      email: currentUser.email || (storedDonorName ? `${storedDonorName.toLowerCase().replace(/\s+/g, '')}@relief.org` : undefined),
+      phone: currentUser.phoneNumber || undefined,
+      authType: (storedAuthType === 'google' || !isAnon ? 'google' : 'anonymous') as AuthType,
+      profilePictureUrl: `https://api.dicebear.com/9.x/avataaars/svg?seed=${currentUser.uid}`,
+      profileCompleted: false,
+      createdAt: Date.now(),
+    };
+
+    // Sync or retrieve existing document from Firestore
+    const syncedProfile = await syncUserProfile(baseProfile);
+    setUserProfile(syncedProfile);
+
+    // If signed in with Google or has stored donor session, load Donor Profile
+    if (!isAnon || storedAuthType === 'google') {
+      setDonorLoading(true);
+      const donor = await fetchDonorProfile(currentUser.uid);
+      setDonorProfile(donor);
+      setDonorLoading(false);
+    } else {
+      setDonorProfile(null);
+    }
+  };
+
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
-      setUser(currentUser);
       if (currentUser) {
-        const isAnon = currentUser.isAnonymous;
-        // Check if there is stored donor meta for this anon session
-        const storedDonorName = sessionStorage.getItem(`donor_name_${currentUser.uid}`);
-        const storedAuthType = sessionStorage.getItem(`auth_type_${currentUser.uid}`);
-
-        const profile: UserProfile = {
-          uid: currentUser.uid,
-          name: currentUser.displayName || storedDonorName || (isAnon ? `Guest SOS #${currentUser.uid.slice(0, 5)}` : 'Trahi User'),
-          email: currentUser.email || (storedDonorName ? `${storedDonorName.toLowerCase().replace(/\s+/g, '')}@relief.org` : undefined),
-          phone: currentUser.phoneNumber || undefined,
-          authType: (storedAuthType === 'google' || !isAnon ? 'google' : 'anonymous') as AuthType,
-          createdAt: Date.now(),
-        };
-        setUserProfile(profile);
-        // Persist to users collection in Firestore
-        await syncUserProfile(profile);
+        setUser(currentUser);
+        await loadProfile(currentUser);
+        setLoading(false);
       } else {
-        setUserProfile(null);
+        // Automatic anonymous sign-in for seamless frictionless SOS emergency access
+        try {
+          const anonRes = await signInAnonymously(auth);
+          setUser(anonRes.user);
+          await loadProfile(anonRes.user);
+        } catch (e) {
+          console.error("Auto anonymous auth failed:", e);
+          setUser(null);
+          setUserProfile(null);
+          setDonorProfile(null);
+        } finally {
+          setLoading(false);
+        }
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const signInWithGoogle = async () => {
+  const isGoogleUser = Boolean(
+    user && (!user.isAnonymous || sessionStorage.getItem(`auth_type_${user.uid}`) === 'google')
+  );
+
+  const refreshUserProfile = async () => {
+    if (user) {
+      await loadProfile(user);
+    }
+  };
+
+  const refreshDonorProfile = async (): Promise<DonorProfile | null> => {
+    if (!user) return null;
+    setDonorLoading(true);
+    const donor = await fetchDonorProfile(user.uid);
+    setDonorProfile(donor);
+    setDonorLoading(false);
+    return donor;
+  };
+
+  const updateUserProfileState = (newProfile: UserProfile) => {
+    setUserProfile(newProfile);
+  };
+
+  const updateDonorProfileState = (newDonor: DonorProfile) => {
+    setDonorProfile(newDonor);
+  };
+
+  const saveDonor = async (donorData: DonorProfile) => {
+    await saveDonorProfile(donorData);
+    setDonorProfile(donorData);
+  };
+
+  const signInWithGoogle = async (): Promise<User | null> => {
     setAuthError(null);
     setIsDomainError(false);
     try {
       setLoading(true);
       const result = await signInWithPopup(auth, googleProvider);
-      const profile: UserProfile = {
-        uid: result.user.uid,
-        name: result.user.displayName || 'Google Donor',
-        email: result.user.email || undefined,
-        authType: 'google',
-        createdAt: Date.now(),
-      };
-      setUserProfile(profile);
-      await syncUserProfile(profile);
+      setUser(result.user);
+      sessionStorage.setItem(`auth_type_${result.user.uid}`, 'google');
+      await loadProfile(result.user);
+      return result.user;
     } catch (err: any) {
       console.error("Google Sign-In Error:", err);
       const errorCode = err?.code || '';
@@ -89,14 +155,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else if (errorCode === 'auth/popup-blocked') {
         setAuthError("Sign-in popup was blocked by browser. Please allow popups or use Verified Donor mode.");
       } else {
-        setAuthError(err?.message || "Google Sign-In failed. You can continue as a Guest or Verified Donor.");
+        setAuthError(err?.message || "Google Sign-In failed. Please try again.");
       }
+      return null;
     } finally {
       setLoading(false);
     }
   };
 
-  const signInAsDonor = async (donorName: string = "Verified Donor", donorEmail?: string) => {
+  const signInAsDonorFallback = async (donorName: string = "Verified Donor", donorEmail?: string): Promise<User | null> => {
     setAuthError(null);
     setIsDomainError(false);
     try {
@@ -104,19 +171,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await signInAnonymously(auth);
       sessionStorage.setItem(`donor_name_${result.user.uid}`, donorName);
       sessionStorage.setItem(`auth_type_${result.user.uid}`, 'google');
-
-      const profile: UserProfile = {
-        uid: result.user.uid,
-        name: donorName,
-        email: donorEmail || `${donorName.toLowerCase().replace(/\s+/g, '')}@relief-donor.org`,
-        authType: 'google',
-        createdAt: Date.now(),
-      };
-      setUserProfile(profile);
-      await syncUserProfile(profile);
+      setUser(result.user);
+      await loadProfile(result.user);
+      return result.user;
     } catch (err: any) {
-      console.error("Donor Sign-In Error:", err);
+      console.error("Donor Fallback Sign-In Error:", err);
       setAuthError(err?.message || "Could not sign in as donor.");
+      return null;
     } finally {
       setLoading(false);
     }
@@ -130,15 +191,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const result = await signInAnonymously(auth);
       sessionStorage.removeItem(`donor_name_${result.user.uid}`);
       sessionStorage.removeItem(`auth_type_${result.user.uid}`);
-
-      const profile: UserProfile = {
-        uid: result.user.uid,
-        name: `Guest SOS User #${result.user.uid.slice(0, 5)}`,
-        authType: 'anonymous',
-        createdAt: Date.now(),
-      };
-      setUserProfile(profile);
-      await syncUserProfile(profile);
+      setUser(result.user);
+      await loadProfile(result.user);
     } catch (err: any) {
       console.error("Anonymous Sign-In Error:", err);
       setAuthError(err?.message || "Could not sign in anonymously.");
@@ -154,8 +208,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         sessionStorage.removeItem(`auth_type_${user.uid}`);
       }
       await firebaseSignOut(auth);
-      setUser(null);
-      setUserProfile(null);
+      setDonorProfile(null);
+      // Re-sign in anonymously immediately for seamless main app SOS operation
+      const anonRes = await signInAnonymously(auth);
+      setUser(anonRes.user);
+      await loadProfile(anonRes.user);
     } catch (err: any) {
       console.error("Sign Out Error:", err);
     }
@@ -171,11 +228,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         userProfile,
+        donorProfile,
         loading,
+        donorLoading,
+        isGoogleUser,
         signInWithGoogle,
         signInAsGuest,
-        signInAsDonor,
+        signInAsDonorFallback,
         signOut,
+        updateUserProfileState,
+        updateDonorProfileState,
+        refreshUserProfile,
+        refreshDonorProfile,
+        saveDonor,
         authError,
         isDomainError,
         clearAuthError,
@@ -193,3 +258,4 @@ export const useAuth = (): AuthContextType => {
   }
   return context;
 };
+

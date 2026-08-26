@@ -4,13 +4,13 @@ import { Siren, Shield, Heart, Zap, UserCheck, AlertCircle, ArrowRight, CheckCir
 import { useAuth } from '../context/AuthContext.tsx';
 
 export const LoginScreen: React.FC = () => {
-  const { signInWithGoogle, signInAsGuest, signInAsDonor, loading, authError, isDomainError, clearAuthError } = useAuth();
+  const { signInWithGoogle, signInAsGuest, signInAsDonorFallback, loading, authError, isDomainError, clearAuthError } = useAuth();
   const [donorNameInput, setDonorNameInput] = useState<string>('Ghufran Fazal');
   const [showDonorInput, setShowDonorInput] = useState<boolean>(false);
 
   const handleCustomDonorSignIn = (e: React.FormEvent) => {
     e.preventDefault();
-    signInAsDonor(donorNameInput.trim() || 'Verified Donor');
+    signInAsDonorFallback(donorNameInput.trim() || 'Verified Donor');
   };
 
   return (
@@ -105,7 +105,7 @@ export const LoginScreen: React.FC = () => {
                 {isDomainError && (
                   <div className="mt-3 pt-3 border-t border-amber-200/70">
                     <button
-                      onClick={() => signInAsDonor(donorNameInput || 'Ghufran Fazal')}
+                      onClick={() => signInAsDonorFallback(donorNameInput || 'Ghufran Fazal')}
                       disabled={loading}
                       className="w-full py-2.5 px-3 bg-amber-600 hover:bg-amber-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-xs transition cursor-pointer"
                     >

@@ -2,28 +2,60 @@
   "entities": {
     "UserProfile": {
       "title": "UserProfile",
-      "description": "Registered or guest user profile in the emergency network",
+      "description": "User profile with optional medical & location information for emergency response",
       "type": "object",
       "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching document ID"
+        },
         "name": {
           "type": "string",
-          "description": "Full name or guest identity of the user"
+          "description": "Full name of the user or emergency victim"
         },
-        "phone": {
-          "type": "string",
-          "description": "Optional emergency phone contact"
+        "age": {
+          "type": "number",
+          "description": "Age of the user"
         },
-        "authType": {
+        "gender": {
           "type": "string",
-          "description": "Authentication provider type",
-          "enum": ["google", "anonymous"]
+          "description": "Gender identity (Male, Female, Other, etc.)"
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Blood group for emergency transfusions (A+, O+, etc.)"
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "DiceBear generated avatar URL or custom avatar URL"
+        },
+        "location": {
+          "type": "object",
+          "description": "GPS coordinates and administrative district/block location",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "district": { "type": "string" },
+            "block": { "type": "string" },
+            "pincode": { "type": "string" },
+            "state": { "type": "string" }
+          },
+          "required": ["latitude", "longitude", "state"]
+        },
+        "profileCompleted": {
+          "type": "boolean",
+          "description": "Whether user completed and saved their profile"
         },
         "createdAt": {
           "type": "number",
           "description": "Account registration timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last profile update timestamp"
         }
       },
-      "required": ["name", "authType", "createdAt"]
+      "required": ["userId", "name", "profileCompleted", "createdAt"]
     },
     "SOSReport": {
       "title": "SOSReport",
@@ -114,12 +146,61 @@
         }
       },
       "required": ["sosReportId", "donorName", "amount", "status", "timestamp"]
+    },
+    "Donor": {
+      "title": "Donor",
+      "description": "Verified Google donor profile and cause preferences for transparent disaster relief",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching Google Account"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the verified donor"
+        },
+        "email": {
+          "type": "string",
+          "description": "Google authenticated email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for receipt delivery and relief audits"
+        },
+        "city": {
+          "type": "string",
+          "description": "City or municipality of residence"
+        },
+        "state": {
+          "type": "string",
+          "description": "State or province"
+        },
+        "preferredCauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of emergency causes donor prefers to support (e.g. Flood, Earthquake, Fire, Other Emergencies)"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Donor registration timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last donor profile update timestamp"
+        }
+      },
+      "required": ["userId", "name", "email", "phone", "createdAt"]
     }
   },
   "firestore": {
     "/users/{userId}": {
       "schema": "UserProfile",
       "description": "User profile records indexed by auth UID"
+    },
+    "/donors/{donorId}": {
+      "schema": "Donor",
+      "description": "Verified donor profiles and relief preferences"
     },
     "/sos_reports/{reportId}": {
       "schema": "SOSReport",

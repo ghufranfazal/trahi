@@ -13,7 +13,13 @@ service cloud.firestore {
       allow create, update: if isAuthenticated() && request.auth.uid == userId;
     }
 
-    // 2. SOS reports collection
+    // 2. Donors collection
+    match /donors/{donorId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.auth.uid == donorId || request.resource.data.userId == request.auth.uid);
+    }
+
+    // 3. SOS reports collection
     match /sos_reports/{reportId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
