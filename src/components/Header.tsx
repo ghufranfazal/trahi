@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { Info, X, PhoneCall, ShieldAlert } from 'lucide-react';
+import { Info, X, PhoneCall, ShieldAlert, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useAuth } from '../context/AuthContext.tsx';
 
 export const Header: React.FC = () => {
   const [showInfo, setShowInfo] = useState(false);
+  const { userProfile, signOut } = useAuth();
 
   return (
     <>
@@ -26,8 +28,25 @@ export const Header: React.FC = () => {
           </div>
         </div>
 
-        {/* Right: Info / Helplines Modal trigger */}
+        {/* Right: Info / Helplines Modal trigger & Mobile Auth status */}
         <div className="flex items-center gap-2">
+          {/* Active User Badge on mobile */}
+          {userProfile && (
+            <div className="md:hidden flex items-center gap-1.5 px-2.5 py-1 bg-white rounded-full border border-gray-200 shadow-2xs">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <span className="text-[10px] font-bold text-gray-700 max-w-[80px] truncate">
+                {userProfile.authType === 'google' ? userProfile.name : 'Guest'}
+              </span>
+              <button
+                onClick={signOut}
+                title="Sign out"
+                className="text-gray-400 hover:text-red-600 ml-0.5"
+              >
+                <LogOut size={12} />
+              </button>
+            </div>
+          )}
+
           <button
             onClick={() => setShowInfo(true)}
             className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white hover:bg-gray-50 border border-gray-200/80 text-xs font-semibold text-gray-700 shadow-2xs transition cursor-pointer"
@@ -125,4 +144,3 @@ export const Header: React.FC = () => {
     </>
   );
 };
-

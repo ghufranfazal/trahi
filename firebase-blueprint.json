@@ -1,0 +1,133 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Registered or guest user profile in the emergency network",
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "Full name or guest identity of the user"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Optional emergency phone contact"
+        },
+        "authType": {
+          "type": "string",
+          "description": "Authentication provider type",
+          "enum": ["google", "anonymous"]
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Account registration timestamp in milliseconds"
+        }
+      },
+      "required": ["name", "authType", "createdAt"]
+    },
+    "SOSReport": {
+      "title": "SOSReport",
+      "description": "Emergency distress beacon and audio/text report",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the distress caller"
+        },
+        "voiceUrl": {
+          "type": "string",
+          "description": "URL to audio recording in cloud storage (or null)"
+        },
+        "transcript": {
+          "type": "string",
+          "description": "Transcribed distress message"
+        },
+        "latitude": {
+          "type": "number",
+          "description": "GPS latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "GPS longitude coordinate"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix timestamp of distress activation"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the emergency response",
+          "enum": ["active", "responding", "resolved", "cancelled"]
+        },
+        "userAddress": {
+          "type": "string",
+          "description": "Street or landmark address of victim"
+        }
+      },
+      "required": ["userId", "transcript", "latitude", "longitude", "timestamp", "status"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Transparent disaster relief financial disbursement record",
+      "type": "object",
+      "properties": {
+        "sosReportId": {
+          "type": "string",
+          "description": "Referenced SOS distress report or campaign code"
+        },
+        "donorName": {
+          "type": "string",
+          "description": "Public name of the donor or contributor"
+        },
+        "donorUserId": {
+          "type": "string",
+          "description": "Auth UID of the donor if signed in"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Relief donation amount in INR"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current audit stage of the relief aid",
+          "enum": ["Received", "Verifying", "Approved", "Transferred", "Utilization Proof", "Closed"]
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Pledge timestamp in milliseconds"
+        },
+        "sosLocationName": {
+          "type": "string",
+          "description": "Disaster zone or camp location name"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Designated emergency relief purpose"
+        },
+        "proofNote": {
+          "type": "string",
+          "description": "Audit verification and field proof notes"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Method of transfer (UPI, NetBanking, Card)"
+        }
+      },
+      "required": ["sosReportId", "donorName", "amount", "status", "timestamp"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile records indexed by auth UID"
+    },
+    "/sos_reports/{reportId}": {
+      "schema": "SOSReport",
+      "description": "Emergency SOS distress beacons logged by victims"
+    },
+    "/donations/{donationId}": {
+      "schema": "Donation",
+      "description": "Transparent public disaster relief ledger"
+    }
+  }
+}

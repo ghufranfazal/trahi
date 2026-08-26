@@ -1,6 +1,7 @@
 import React from 'react';
-import { Home, Sparkles, Siren, Heart, User, ShieldAlert, Radio } from 'lucide-react';
+import { Home, Sparkles, Siren, Heart, User, LogOut, Radio, UserCheck } from 'lucide-react';
 import { TabType } from '../types.ts';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface SidebarNavProps {
   activeTab: TabType;
@@ -11,11 +12,13 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
   activeTab = 'sos',
   onTabChange,
 }) => {
+  const { userProfile, signOut } = useAuth();
+
   const navItems: { id: TabType; label: string; icon: React.ReactNode; badge?: string }[] = [
     { id: 'home', label: 'Home', icon: <Home size={20} /> },
     { id: 'trahigpt', label: 'TrahiGPT', icon: <Sparkles size={20} />, badge: 'AI' },
     { id: 'sos', label: 'SOS Alert', icon: <Siren size={20} />, badge: 'Active' },
-    { id: 'donate', label: 'Donate', icon: <Heart size={20} /> },
+    { id: 'donate', label: 'Donations Ledger', icon: <Heart size={20} />, badge: 'Live' },
     { id: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];
 
@@ -96,22 +99,39 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
         </nav>
       </div>
 
-      {/* Bottom User / Helplines quick card */}
-      <div className="pt-4 border-t border-gray-100">
-        <div className="flex items-center gap-3 p-2 rounded-2xl hover:bg-gray-50 transition cursor-pointer">
-          <div className="w-10 h-10 rounded-full border-2 border-[#0F9D8F] overflow-hidden bg-white shadow-xs shrink-0">
-            <img
-              src="https://api.dicebear.com/7.x/avataaars/svg?seed=Felix"
-              alt="User profile"
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
+      {/* Bottom User / Helplines quick card with Firebase Status */}
+      <div className="pt-4 border-t border-gray-100 space-y-2">
+        <div className="flex items-center justify-between p-2 rounded-2xl bg-gray-50 border border-gray-100">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-9 h-9 rounded-full border-2 border-[#0F9D8F] overflow-hidden bg-white shadow-xs shrink-0">
+              <img
+                src={
+                  userProfile?.authType === 'google'
+                    ? `https://api.dicebear.com/7.x/avataaars/svg?seed=${userProfile?.name || 'Google'}`
+                    : 'https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'
+                }
+                alt="User profile"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-bold text-gray-900 truncate">
+                {userProfile?.name || 'Guest User'}
+              </p>
+              <span className="text-[10px] font-medium text-emerald-600 block truncate">
+                {userProfile?.authType === 'google' ? '✓ Google Donor' : '⚡ Anonymous SOS'}
+              </span>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-gray-900 truncate">Demo Responder</p>
-            <p className="text-[11px] text-gray-400 truncate">GPS Active • 112 Ready</p>
-          </div>
-          <div className="w-2 h-2 rounded-full bg-emerald-500 ring-4 ring-emerald-100" />
+
+          <button
+            onClick={signOut}
+            title="Sign out / Switch account"
+            className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition cursor-pointer"
+          >
+            <LogOut size={16} />
+          </button>
         </div>
       </div>
     </aside>
