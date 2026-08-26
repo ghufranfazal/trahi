@@ -1,7 +1,7 @@
 {
   "name": "Trahi - Emergency Response",
   "description": "Emergency response application for India with instant SOS broadcast and rapid assistance.",
-  "requestFramePermissions": ["geolocation"],
+  "requestFramePermissions": ["geolocation", "microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
 

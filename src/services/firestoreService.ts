@@ -248,13 +248,156 @@ export async function saveUserProfileToFirestore(
   await setDoc(userDocRef, payload, { merge: true });
 }
 
+// Initial sample SOS distress beacons across India
+const INITIAL_SAMPLE_SOS_REPORTS: Omit<SOSReport, 'id'>[] = [
+  {
+    userId: "trahi_anon_wayanad_01",
+    voiceUrl: null,
+    transcript: "Flash flood water reached 1st floor near Meppadi bridge. 14 residents including children need immediate inflatable boat evacuation.",
+    latitude: 11.5540,
+    longitude: 76.1264,
+    timestamp: Date.now() - 1000 * 60 * 45, // 45 mins ago
+    status: "active",
+    userAddress: "Meppadi Bridge Sector 3, Wayanad, Kerala - 673577"
+  },
+  {
+    userId: "trahi_anon_assam_02",
+    voiceUrl: null,
+    transcript: "Brahmaputra overflow breached protective bund. 40 families stranded on high embankment, clean drinking water & dry rations needed.",
+    latitude: 26.5775,
+    longitude: 93.1711,
+    timestamp: Date.now() - 1000 * 60 * 180, // 3 hours ago
+    status: "responding",
+    userAddress: "Kaziranga North Sector, Golaghat, Assam - 785609"
+  },
+  {
+    userId: "trahi_anon_mumbai_03",
+    voiceUrl: null,
+    transcript: "Severe urban waterlogging near Kurla railway line, 3 feet standing water. Urgent insulin & medical assistance needed for elderly citizen.",
+    latitude: 19.0657,
+    longitude: 72.8794,
+    timestamp: Date.now() - 1000 * 60 * 300, // 5 hours ago
+    status: "active",
+    userAddress: "LBS Marg near Kurla Depot, Mumbai, Maharashtra - 400070"
+  },
+  {
+    userId: "trahi_anon_delhi_04",
+    voiceUrl: null,
+    transcript: "Yamuna floodplain relief shelter flooded. Requesting urgent emergency blankets, tarpaulins, and pediatric oral rehydration packets.",
+    latitude: 28.6180,
+    longitude: 77.2650,
+    timestamp: Date.now() - 1000 * 60 * 720, // 12 hours ago
+    status: "responding",
+    userAddress: "Yamuna Khadar Relief Camp, East Delhi - 110091"
+  },
+  {
+    userId: "trahi_anon_mandi_05",
+    voiceUrl: null,
+    transcript: "Heavy rainfall triggered rockfall blocking access road. Local clinic running low on first-aid trauma supplies.",
+    latitude: 31.7087,
+    longitude: 76.9320,
+    timestamp: Date.now() - 1000 * 60 * 1440, // 24 hours ago
+    status: "resolved",
+    userAddress: "Pandoh Valley Road, Mandi, Himachal Pradesh - 175001"
+  },
+  {
+    userId: "trahi_anon_cuttack_06",
+    voiceUrl: null,
+    transcript: "Mahanadi canal overflow in low-lying settlement. Community kitchen requiring grain supplies and solar emergency lights.",
+    latitude: 20.4625,
+    longitude: 85.8828,
+    timestamp: Date.now() - 1000 * 60 * 90, // 1.5 hours ago
+    status: "active",
+    userAddress: "Jobra Barrage Lowland Colony, Cuttack, Odisha - 753003"
+  }
+];
+
+// Seed SOS reports if collection is empty
+export async function seedSOSReportsIfEmpty(): Promise<void> {
+  try {
+    const sosRef = collection(db, 'sos_reports');
+    const snapshot = await getDocs(sosRef);
+    if (snapshot.empty) {
+      for (const item of INITIAL_SAMPLE_SOS_REPORTS) {
+        await addDoc(sosRef, item);
+      }
+    }
+  } catch (error) {
+    console.error("Failed to seed initial SOS reports:", error);
+  }
+}
+
+// Realtime subscription to SOS distress reports collection
+export function subscribeToSOSReports(callback: (reports: SOSReport[]) => void): () => void {
+  seedSOSReportsIfEmpty();
+  const sosRef = collection(db, 'sos_reports');
+  const q = query(sosRef, orderBy('timestamp', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const items: SOSReport[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      items.push({
+        id: doc.id,
+        userId: data.userId || 'anonymous',
+        voiceUrl: data.voiceUrl || null,
+        transcript: data.transcript || '',
+        category: data.category || 'Other',
+        latitude: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude) || 0,
+        longitude: typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude) || 0,
+        timestamp: data.timestamp || Date.now(),
+        status: data.status || 'active',
+        userAddress: data.userAddress || ''
+      });
+    });
+    callback(items);
+  }, (err) => {
+    console.error("Error subscribing to sos_reports:", err);
+  });
+}
+
+// Fetch SOS reports once
+export async function fetchSOSReports(): Promise<SOSReport[]> {
+  try {
+    seedSOSReportsIfEmpty();
+    const sosRef = collection(db, 'sos_reports');
+    const q = query(sosRef, orderBy('timestamp', 'desc'));
+    const snapshot = await getDocs(q);
+    const items: SOSReport[] = [];
+    snapshot.forEach((doc) => {
+      const data = doc.data();
+      items.push({
+        id: doc.id,
+        userId: data.userId || 'anonymous',
+        voiceUrl: data.voiceUrl || null,
+        transcript: data.transcript || '',
+        category: data.category || 'Other',
+        latitude: typeof data.latitude === 'number' ? data.latitude : parseFloat(data.latitude) || 0,
+        longitude: typeof data.longitude === 'number' ? data.longitude : parseFloat(data.longitude) || 0,
+        timestamp: data.timestamp || Date.now(),
+        status: data.status || 'active',
+        userAddress: data.userAddress || ''
+      });
+    });
+    return items;
+  } catch (error) {
+    console.error("Failed to fetch SOS reports:", error);
+    return [];
+  }
+}
+
 // Create an SOS distress report in Firestore
 export async function createSOSReport(report: Omit<SOSReport, 'id'>): Promise<string> {
   const sosCollection = collection(db, 'sos_reports');
   const docRef = await addDoc(sosCollection, {
-    ...report,
-    voiceUrl: null, // As requested: leave voiceUrl as null for now
-    timestamp: report.timestamp || Date.now()
+    userId: report.userId,
+    voiceUrl: report.voiceUrl || null,
+    transcript: report.transcript || 'Emergency voice distress signal',
+    category: report.category || 'Other',
+    latitude: report.latitude,
+    longitude: report.longitude,
+    timestamp: report.timestamp || Date.now(),
+    status: report.status || 'active',
+    userAddress: report.userAddress || ''
   });
   return docRef.id;
 }

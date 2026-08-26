@@ -44,30 +44,10 @@ function MainApp() {
   const [isInDonorMode, setIsInDonorMode] = useState<boolean>(false);
   const [sosTriggeredMessage, setSosTriggeredMessage] = useState<string | null>(null);
 
-  // Trigger Firestore SOS Report with real GPS telemetry
-  const handleTriggerSOS = async () => {
-    if (!user) return;
-    try {
-      const lat = location?.latitude ?? 19.0760;
-      const lng = location?.longitude ?? 72.8777;
-      const userAddr = location?.formattedAddress || "Current GPS Location";
-
-      const reportId = await createSOSReport({
-        userId: user.uid,
-        voiceUrl: null,
-        transcript: "Emergency voice transcript: Distress signal activated by user.",
-        latitude: lat,
-        longitude: lng,
-        timestamp: Date.now(),
-        status: 'active',
-        userAddress: userAddr,
-      });
-
-      setSosTriggeredMessage(`SOS distress beacon logged (${reportId})`);
-      setTimeout(() => setSosTriggeredMessage(null), 4000);
-    } catch (err) {
-      console.error("Failed to post SOS to Firestore:", err);
-    }
+  // Handle SOS success callback
+  const handleSOSSuccess = (result: any) => {
+    setSosTriggeredMessage(`SOS Distress Beacon Logged [${result.category}]: ${result.reportId.slice(0, 10)}...`);
+    setTimeout(() => setSosTriggeredMessage(null), 6000);
   };
 
   // 1. If checking auth state, show a clean loader
@@ -160,7 +140,7 @@ function MainApp() {
           <main id="main-content-dashboard" className="flex-1 w-full flex flex-col justify-between">
             {/* Mobile View: Clean single-column layout */}
             <div className="md:hidden flex-1 flex flex-col items-center justify-center px-4 py-3 space-y-4">
-              <SOSButton onTriggerSOS={handleTriggerSOS} />
+              <SOSButton onSOSSuccess={handleSOSSuccess} />
 
               {/* Location Map Widget placed below circular SOS pulse button */}
               <div className="w-full flex justify-center pb-2">
@@ -172,7 +152,7 @@ function MainApp() {
             <div className="hidden md:grid md:grid-cols-12 gap-6 lg:gap-8 px-6 lg:px-10 py-4 flex-1 items-start max-w-7xl w-full mx-auto">
               {/* Left/Main Column: SOS Hero Console + Embedded Map Widget */}
               <div className="md:col-span-6 lg:col-span-7 flex flex-col items-center justify-center bg-white/70 backdrop-blur-xs rounded-3xl p-6 lg:p-8 border border-gray-200/60 shadow-[0_4px_25px_rgba(0,0,0,0.02)] space-y-6">
-                <SOSButton onTriggerSOS={handleTriggerSOS} />
+                <SOSButton onSOSSuccess={handleSOSSuccess} />
 
                 {/* Location Map Widget directly below the SOS Button */}
                 <div className="w-full max-w-md">

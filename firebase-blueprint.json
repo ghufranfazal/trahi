@@ -74,6 +74,11 @@
           "type": "string",
           "description": "Transcribed distress message"
         },
+        "category": {
+          "type": "string",
+          "description": "AI-classified emergency category (Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, Other)",
+          "enum": ["Flood", "Fire", "Earthquake", "Medical Emergency", "Crime/Violence", "Building Collapse", "Accident", "Other"]
+        },
         "latitude": {
           "type": "number",
           "description": "GPS latitude coordinate"

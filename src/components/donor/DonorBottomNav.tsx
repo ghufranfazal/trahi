@@ -46,7 +46,7 @@ export const DonorBottomNav: React.FC<DonorBottomNavProps> = ({
   ];
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100/90 shadow-lg px-2 sm:px-4 py-1.5 pb-safe">
+    <div className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-gray-100/90 shadow-lg px-2 sm:px-4 py-1.5 pb-safe md:hidden">
       <nav id="donor-bottom-navigation" className="max-w-xl mx-auto flex items-center justify-around">
         {navItems.map((item) => {
           const Icon = item.icon;

@@ -58,11 +58,22 @@ export interface UserLocation {
 
 export type SOSStatus = 'active' | 'responding' | 'resolved' | 'cancelled';
 
+export type EmergencyCategory = 
+  | 'Flood'
+  | 'Fire'
+  | 'Earthquake'
+  | 'Medical Emergency'
+  | 'Crime/Violence'
+  | 'Building Collapse'
+  | 'Accident'
+  | 'Other';
+
 export interface SOSReport {
   id?: string;
   userId: string;
   voiceUrl: string | null;
   transcript: string;
+  category?: EmergencyCategory | string;
   latitude: number;
   longitude: number;
   timestamp: number;

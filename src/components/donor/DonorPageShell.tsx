@@ -125,15 +125,16 @@ export const DonorPageShell: React.FC<DonorPageShellProps> = ({ onBackToTrahi })
       </header>
 
       {/* Main Content Area */}
-      <main className="flex-1 pb-24 pt-3 sm:pt-6">
+      <main className={`flex-1 ${donorActiveTab === 'map' ? 'pb-16 md:pb-0 pt-0 flex flex-col' : 'pb-24 md:pb-12 pt-3 sm:pt-6'}`}>
         <AnimatePresence mode="wait">
           {donorActiveTab === 'map' && (
             <motion.div
               key="donor-map"
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -8 }}
-              transition={{ duration: 0.18 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.15 }}
+              className="flex-1 flex flex-col w-full h-full"
             >
               <DonorCrisisMapTab onNavigateToDonate={() => setDonorActiveTab('donate')} />
             </motion.div>
