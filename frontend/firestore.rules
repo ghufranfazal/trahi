@@ -1,0 +1,37 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Helper function to check if user is authenticated (Google or Anonymous)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // 1. Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && request.auth.uid == userId;
+    }
+
+    // 2. Donors collection
+    match /donors/{donorId} {
+      allow read: if isAuthenticated();
+      allow create, update: if isAuthenticated() && (request.auth.uid == donorId || request.resource.data.userId == request.auth.uid);
+    }
+
+    // 3. SOS reports collection
+    match /sos_reports/{reportId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if isAuthenticated() && (resource.data.userId == request.auth.uid || request.auth.token.firebase.sign_in_provider == 'google.com');
+    }
+
+    // 3. Donations collection with transparent ledger tracking
+    match /donations/{donationId} {
+      allow read: if true; // Public transparency ledger
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated();
+      allow delete: if false; // Immutable ledger
+    }
+  }
+}

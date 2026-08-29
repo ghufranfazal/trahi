@@ -1,0 +1,219 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with optional medical & location information for emergency response",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching document ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user or emergency victim"
+        },
+        "age": {
+          "type": "number",
+          "description": "Age of the user"
+        },
+        "gender": {
+          "type": "string",
+          "description": "Gender identity (Male, Female, Other, etc.)"
+        },
+        "bloodGroup": {
+          "type": "string",
+          "description": "Blood group for emergency transfusions (A+, O+, etc.)"
+        },
+        "profilePictureUrl": {
+          "type": "string",
+          "description": "DiceBear generated avatar URL or custom avatar URL"
+        },
+        "location": {
+          "type": "object",
+          "description": "GPS coordinates and administrative district/block location",
+          "properties": {
+            "latitude": { "type": "number" },
+            "longitude": { "type": "number" },
+            "district": { "type": "string" },
+            "block": { "type": "string" },
+            "pincode": { "type": "string" },
+            "state": { "type": "string" }
+          },
+          "required": ["latitude", "longitude", "state"]
+        },
+        "profileCompleted": {
+          "type": "boolean",
+          "description": "Whether user completed and saved their profile"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Account registration timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last profile update timestamp"
+        }
+      },
+      "required": ["userId", "name", "profileCompleted", "createdAt"]
+    },
+    "SOSReport": {
+      "title": "SOSReport",
+      "description": "Emergency distress beacon and audio/text report",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the distress caller"
+        },
+        "voiceUrl": {
+          "type": "string",
+          "description": "URL to audio recording in cloud storage (or null)"
+        },
+        "transcript": {
+          "type": "string",
+          "description": "Transcribed distress message"
+        },
+        "category": {
+          "type": "string",
+          "description": "AI-classified emergency category (Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, Other)",
+          "enum": ["Flood", "Fire", "Earthquake", "Medical Emergency", "Crime/Violence", "Building Collapse", "Accident", "Other"]
+        },
+        "latitude": {
+          "type": "number",
+          "description": "GPS latitude coordinate"
+        },
+        "longitude": {
+          "type": "number",
+          "description": "GPS longitude coordinate"
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Unix timestamp of distress activation"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current status of the emergency response",
+          "enum": ["active", "responding", "resolved", "cancelled"]
+        },
+        "userAddress": {
+          "type": "string",
+          "description": "Street or landmark address of victim"
+        }
+      },
+      "required": ["userId", "transcript", "latitude", "longitude", "timestamp", "status"]
+    },
+    "Donation": {
+      "title": "Donation",
+      "description": "Transparent disaster relief financial disbursement record",
+      "type": "object",
+      "properties": {
+        "sosReportId": {
+          "type": "string",
+          "description": "Referenced SOS distress report or campaign code"
+        },
+        "donorName": {
+          "type": "string",
+          "description": "Public name of the donor or contributor"
+        },
+        "donorUserId": {
+          "type": "string",
+          "description": "Auth UID of the donor if signed in"
+        },
+        "amount": {
+          "type": "number",
+          "description": "Relief donation amount in INR"
+        },
+        "status": {
+          "type": "string",
+          "description": "Current audit stage of the relief aid",
+          "enum": ["Received", "Verifying", "Approved", "Transferred", "Utilization Proof", "Closed"]
+        },
+        "timestamp": {
+          "type": "number",
+          "description": "Pledge timestamp in milliseconds"
+        },
+        "sosLocationName": {
+          "type": "string",
+          "description": "Disaster zone or camp location name"
+        },
+        "purpose": {
+          "type": "string",
+          "description": "Designated emergency relief purpose"
+        },
+        "proofNote": {
+          "type": "string",
+          "description": "Audit verification and field proof notes"
+        },
+        "paymentMethod": {
+          "type": "string",
+          "description": "Method of transfer (UPI, NetBanking, Card)"
+        }
+      },
+      "required": ["sosReportId", "donorName", "amount", "status", "timestamp"]
+    },
+    "Donor": {
+      "title": "Donor",
+      "description": "Verified Google donor profile and cause preferences for transparent disaster relief",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Firebase Auth UID matching Google Account"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the verified donor"
+        },
+        "email": {
+          "type": "string",
+          "description": "Google authenticated email address"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Contact phone number for receipt delivery and relief audits"
+        },
+        "city": {
+          "type": "string",
+          "description": "City or municipality of residence"
+        },
+        "state": {
+          "type": "string",
+          "description": "State or province"
+        },
+        "preferredCauses": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "List of emergency causes donor prefers to support (e.g. Flood, Earthquake, Fire, Other Emergencies)"
+        },
+        "createdAt": {
+          "type": "number",
+          "description": "Donor registration timestamp in milliseconds"
+        },
+        "updatedAt": {
+          "type": "number",
+          "description": "Last donor profile update timestamp"
+        }
+      },
+      "required": ["userId", "name", "email", "phone", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "User profile records indexed by auth UID"
+    },
+    "/donors/{donorId}": {
+      "schema": "Donor",
+      "description": "Verified donor profiles and relief preferences"
+    },
+    "/sos_reports/{reportId}": {
+      "schema": "SOSReport",
+      "description": "Emergency SOS distress beacons logged by victims"
+    },
+    "/donations/{donationId}": {
+      "schema": "Donation",
+      "description": "Transparent public disaster relief ledger"
+    }
+  }
+}
