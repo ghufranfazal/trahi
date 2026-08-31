@@ -11,7 +11,8 @@ import { ProfileCompletionBanner } from './components/ProfileCompletionBanner.ts
 import { DonorSignIn } from './components/donor/DonorSignIn.tsx';
 import { DonorProfileSetup } from './components/donor/DonorProfileSetup.tsx';
 import { DonorPageShell } from './components/donor/DonorPageShell.tsx';
-import { TabType, DonorProfile } from './types.ts';
+import { HomeDashboard } from './components/home/HomeDashboard.tsx';
+import { TabType, DonorProfile, DonorTabType } from './types.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { useLocation, LocationProvider } from './context/LocationContext.tsx';
 import { createSOSReport } from './services/firestoreService.ts';
@@ -42,6 +43,7 @@ function MainApp() {
   const { location, permissionState } = useLocation();
   const [activeTab, setActiveTab] = useState<TabType>('sos');
   const [isInDonorMode, setIsInDonorMode] = useState<boolean>(false);
+  const [donorInitialTab, setDonorInitialTab] = useState<DonorTabType>('donate');
   const [sosTriggeredMessage, setSosTriggeredMessage] = useState<string | null>(null);
 
   // Handle SOS success callback
@@ -73,8 +75,10 @@ function MainApp() {
   if (isInDonorMode && isGoogleUser && donorProfile) {
     return (
       <DonorPageShell
+        initialTab={donorInitialTab}
         onBackToTrahi={() => {
           setIsInDonorMode(false);
+          setDonorInitialTab('donate');
           setActiveTab('sos');
         }}
       />
@@ -205,56 +209,26 @@ function MainApp() {
           <main className="flex-1 w-full overflow-y-auto">
             <ProfileView onNavigateToSOS={() => setActiveTab('sos')} />
           </main>
+        ) : activeTab === 'home' ? (
+          /* Situational Awareness & Community Overview Dashboard */
+          <main className="flex-1 w-full overflow-y-auto pb-6">
+            <HomeDashboard
+              onNavigateToSOS={() => setActiveTab('sos')}
+              onNavigateToTrahiGPT={() => setActiveTab('trahigpt')}
+              onNavigateToDonate={() => handleTabSelect('donate')}
+              onNavigateToCrisisMap={() => {
+                setDonorInitialTab('map');
+                if (isGoogleUser && donorProfile) {
+                  setIsInDonorMode(true);
+                } else {
+                  handleTabSelect('donate');
+                }
+              }}
+            />
+          </main>
         ) : (
-          /* Secondary Tab Views (Home, TrahiGPT) */
+          /* TrahiGPT Tab View */
           <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto">
-            {activeTab === 'home' && (
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-full space-y-4">
-                <div className="w-14 h-14 bg-teal-50 text-[#0F9D8F] rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <HomeIcon size={28} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">Trahi Safety Network</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Real-time disaster relief broadcasts, emergency medical routing, and transparent donor disbursement tracking.
-                </p>
-
-                <div className="grid grid-cols-2 gap-3 pt-2 text-left">
-                  <button
-                    onClick={() => setActiveTab('profile')}
-                    className="p-3.5 rounded-2xl bg-teal-50/70 hover:bg-teal-100/60 border border-teal-100 transition text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-[#0F9D8F]">
-                      <User size={14} />
-                      <span>Medical Profile</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mt-1">
-                      {userProfile?.profileCompleted ? '✓ Profile Synced' : '⚠️ Action Recommended'}
-                    </p>
-                  </button>
-
-                  <button
-                    onClick={() => handleTabSelect('donate')}
-                    className="p-3.5 rounded-2xl bg-amber-50/70 hover:bg-amber-100/60 border border-amber-100 transition text-left cursor-pointer"
-                  >
-                    <div className="flex items-center gap-1.5 text-xs font-bold text-amber-700">
-                      <Heart size={14} />
-                      <span>Relief Ledger</span>
-                    </div>
-                    <p className="text-[11px] text-gray-500 mt-1">Live 6-stage audits</p>
-                  </button>
-                </div>
-
-                <div className="pt-3">
-                  <button
-                    onClick={() => setActiveTab('sos')}
-                    className="w-full py-3 bg-[#0F9D8F] hover:bg-[#0c8579] text-white rounded-2xl text-xs font-bold shadow-md shadow-[#0F9D8F]/25 transition cursor-pointer"
-                  >
-                    Open Emergency SOS Console →
-                  </button>
-                </div>
-              </div>
-            )}
-
             {activeTab === 'trahigpt' && (
               <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-full space-y-4">
                 <div className="w-14 h-14 bg-teal-50 text-[#0F9D8F] rounded-2xl flex items-center justify-center mx-auto mb-2">

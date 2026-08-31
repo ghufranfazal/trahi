@@ -21,13 +21,17 @@ import { DonorMyDonationsTab } from './DonorMyDonationsTab.tsx';
 
 interface DonorPageShellProps {
   onBackToTrahi: () => void;
+  initialTab?: DonorTabType;
 }
 
-export const DonorPageShell: React.FC<DonorPageShellProps> = ({ onBackToTrahi }) => {
+export const DonorPageShell: React.FC<DonorPageShellProps> = ({ 
+  onBackToTrahi,
+  initialTab = 'donate'
+}) => {
   const { user, donorProfile } = useAuth();
   
-  // Default active tab when entering the Donor Page is 'donate' (Browse & Donate)
-  const [donorActiveTab, setDonorActiveTab] = useState<DonorTabType>('donate');
+  // Default active tab when entering the Donor Page
+  const [donorActiveTab, setDonorActiveTab] = useState<DonorTabType>(initialTab);
 
   const avatarUrl = user?.uid 
     ? `https://api.dicebear.com/9.x/avataaars/svg?seed=${user.uid}` 
