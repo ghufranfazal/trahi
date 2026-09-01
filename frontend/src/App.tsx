@@ -141,7 +141,7 @@ function MainApp() {
 
         {/* Dynamic Tab Body */}
         {activeTab === 'sos' ? (
-          <main id="main-content-dashboard" className="flex-1 w-full flex flex-col justify-between">
+          <main id="main-content-dashboard" className="flex-1 w-full flex flex-col justify-between pb-24 md:pb-0">
             {/* Mobile View: Clean single-column layout */}
             <div className="md:hidden flex-1 flex flex-col items-center justify-center px-4 py-3 space-y-4">
               <SOSButton onSOSSuccess={handleSOSSuccess} />
@@ -172,7 +172,7 @@ function MainApp() {
           </main>
         ) : activeTab === 'donate' ? (
           /* Donate Flow: Check if signed in with Google & Donor Profile status */
-          <main className="flex-1 w-full overflow-y-auto py-4">
+          <main className="flex-1 w-full overflow-y-auto py-4 pb-24 md:pb-6">
             {!isGoogleUser ? (
               <DonorSignIn 
                 onSignedIn={() => {
@@ -206,12 +206,12 @@ function MainApp() {
           </main>
         ) : activeTab === 'profile' ? (
           /* User Profile Screen with Firestore Data Sync */
-          <main className="flex-1 w-full overflow-y-auto">
+          <main className="flex-1 w-full overflow-y-auto pb-24 md:pb-6">
             <ProfileView onNavigateToSOS={() => setActiveTab('sos')} />
           </main>
         ) : activeTab === 'home' ? (
           /* Situational Awareness & Community Overview Dashboard */
-          <main className="flex-1 w-full overflow-y-auto pb-6">
+          <main className="flex-1 w-full overflow-y-auto pb-24 md:pb-6">
             <HomeDashboard
               onNavigateToSOS={() => setActiveTab('sos')}
               onNavigateToTrahiGPT={() => setActiveTab('trahigpt')}
@@ -228,7 +228,7 @@ function MainApp() {
           </main>
         ) : (
           /* TrahiGPT Tab View */
-          <main className="flex-1 flex flex-col items-center justify-center p-6 text-center max-w-lg mx-auto">
+          <main className="flex-1 flex flex-col items-center justify-center p-6 pb-24 md:pb-6 text-center max-w-lg mx-auto">
             {activeTab === 'trahigpt' && (
               <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-full space-y-4">
                 <div className="w-14 h-14 bg-teal-50 text-[#0F9D8F] rounded-2xl flex items-center justify-center mx-auto mb-2">

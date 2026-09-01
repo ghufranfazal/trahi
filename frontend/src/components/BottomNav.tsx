@@ -14,7 +14,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   return (
     <nav 
       id="bottom-navigation-tray" 
-      className="md:hidden w-full bg-white h-20 sm:h-22 border-t border-gray-100 flex items-center justify-around px-4 pb-4 sm:pb-3 select-none relative z-20"
+      className="fixed bottom-0 left-0 right-0 z-40 md:hidden w-full bg-white/95 backdrop-blur-md h-20 sm:h-22 border-t border-gray-100 flex items-center justify-around px-4 pb-4 sm:pb-3 select-none shadow-lg pb-safe"
     >
       <div className="w-full max-w-sm sm:max-w-md md:max-w-lg mx-auto flex items-center justify-around">
         {/* 1. Home Tab */}
