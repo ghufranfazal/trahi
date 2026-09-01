@@ -12,6 +12,7 @@ import { DonorSignIn } from './components/donor/DonorSignIn.tsx';
 import { DonorProfileSetup } from './components/donor/DonorProfileSetup.tsx';
 import { DonorPageShell } from './components/donor/DonorPageShell.tsx';
 import { HomeDashboard } from './components/home/HomeDashboard.tsx';
+import { TrahiGPTView } from './components/trahigpt/TrahiGPTView.tsx';
 import { TabType, DonorProfile, DonorTabType } from './types.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { useLocation, LocationProvider } from './context/LocationContext.tsx';
@@ -227,26 +228,11 @@ function MainApp() {
             />
           </main>
         ) : (
-          /* TrahiGPT Tab View */
-          <main className="flex-1 flex flex-col items-center justify-center p-6 pb-24 md:pb-6 text-center max-w-lg mx-auto">
-            {activeTab === 'trahigpt' && (
-              <div className="bg-white rounded-3xl p-8 shadow-sm border border-gray-100 w-full space-y-4">
-                <div className="w-14 h-14 bg-teal-50 text-[#0F9D8F] rounded-2xl flex items-center justify-center mx-auto mb-2">
-                  <Sparkles size={28} />
-                </div>
-                <h3 className="text-xl font-bold text-gray-900">TrahiGPT First-Aid AI</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">
-                  Instant guidance for CPR, burn treatment, trauma triage, snake bites, and disaster preparedness in over 12 Indian regional languages.
-                </p>
-                <button
-                  onClick={() => setActiveTab('sos')}
-                  className="w-full py-3 bg-[#0F9D8F] text-white rounded-2xl text-xs font-bold shadow-md hover:bg-[#0c8579] transition cursor-pointer"
-                >
-                  Open Emergency SOS
-                </button>
-              </div>
-            )}
-          </main>
+          /* Dedicated TrahiGPT Window View */
+          <TrahiGPTView
+            onBackToSOS={() => setActiveTab('sos')}
+            onOpenProfile={() => setActiveTab('profile')}
+          />
         )}
 
         {/* Mobile Bottom Navigation Tray (hidden on tablet/PC) */}
