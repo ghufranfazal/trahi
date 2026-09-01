@@ -5,6 +5,7 @@ import { Donation, DonationStatus } from '../types.ts';
 import { seedDonationsIfEmpty, createDonation, updateDonationStatus } from '../services/firestoreService.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { RazorpayDonateModal } from './donor/RazorpayDonateModal.tsx';
+import { downloadDonationPDFReport } from '../services/pdfReportService.ts';
 import { 
   Heart, 
   CheckCircle2, 
@@ -17,7 +18,9 @@ import {
   AlertCircle,
   FileCheck2,
   Building2,
-  RefreshCw
+  RefreshCw,
+  Download,
+  Loader2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -39,6 +42,20 @@ export const DonationsTracker: React.FC = () => {
   const [showNewModal, setShowNewModal] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+
+  const handleDownloadPDF = async (donation: Donation) => {
+    const key = donation.id || donation.sosReportId || 'current';
+    try {
+      setDownloadingId(key);
+      await downloadDonationPDFReport(donation);
+    } catch (err) {
+      console.error('Failed to generate donation PDF:', err);
+      alert('Could not generate PDF report. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
 
   // Form State for new demo donation
   const [donorName, setDonorName] = useState<string>(userProfile?.name || '');
@@ -244,12 +261,32 @@ export const DonationsTracker: React.FC = () => {
                     </p>
                   )}
 
-                  {/* Micro Progress Bar */}
-                  <div className="mt-3 w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
-                    <div
-                      className="bg-[#0F9D8F] h-1.5 rounded-full transition-all duration-500"
-                      style={{ width: `${((stepIdx + 1) / TIMELINE_STEPS.length) * 100}%` }}
-                    />
+                  {/* Micro Progress Bar & Quick Action */}
+                  <div className="mt-3 flex items-center justify-between gap-2">
+                    <div className="flex-1 bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                      <div
+                        className="bg-[#0F9D8F] h-1.5 rounded-full transition-all duration-500"
+                        style={{ width: `${((stepIdx + 1) / TIMELINE_STEPS.length) * 100}%` }}
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDownloadPDF(item);
+                      }}
+                      disabled={downloadingId === (item.id || item.sosReportId)}
+                      className="px-2 py-0.5 rounded-lg bg-gray-50 hover:bg-teal-50 text-gray-600 hover:text-[#0F9D8F] border border-gray-200 text-[10px] font-bold flex items-center gap-1 transition shrink-0"
+                      title="Download PDF"
+                    >
+                      {downloadingId === (item.id || item.sosReportId) ? (
+                        <Loader2 size={10} className="animate-spin text-[#0F9D8F]" />
+                      ) : (
+                        <Download size={10} className="text-[#0F9D8F]" />
+                      )}
+                      <span>PDF</span>
+                    </button>
                   </div>
                 </div>
               );
@@ -280,11 +317,34 @@ export const DonationsTracker: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex flex-col items-start sm:items-end">
-                  <span className="text-[11px] font-bold text-gray-400">Current Phase</span>
-                  <span className="text-sm font-black text-[#0F9D8F] bg-teal-50 px-3 py-1 rounded-full border border-teal-100 mt-0.5">
-                    {selectedDonation.status}
-                  </span>
+                <div className="flex flex-col sm:items-end gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[11px] font-bold text-gray-400">Current Phase:</span>
+                    <span className="text-sm font-black text-[#0F9D8F] bg-teal-50 px-3 py-1 rounded-full border border-teal-100">
+                      {selectedDonation.status}
+                    </span>
+                  </div>
+
+                  {/* Primary Download PDF Report Button in Detail Header */}
+                  <button
+                    type="button"
+                    onClick={() => handleDownloadPDF(selectedDonation)}
+                    disabled={downloadingId === (selectedDonation.id || selectedDonation.sosReportId)}
+                    className="px-4 py-2 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center gap-2 cursor-pointer disabled:opacity-50"
+                    title="Download real-time PDF accountability report"
+                  >
+                    {downloadingId === (selectedDonation.id || selectedDonation.sosReportId) ? (
+                      <>
+                        <Loader2 size={14} className="animate-spin text-white" />
+                        <span>Generating Live Report...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Download size={14} />
+                        <span>Download PDF Report</span>
+                      </>
+                    )}
+                  </button>
                 </div>
               </div>
 

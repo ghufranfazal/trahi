@@ -10,11 +10,13 @@ import {
   CreditCard,
   Building2,
   Lock,
-  ArrowRight
+  ArrowRight,
+  Download
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { createDonation } from '../../services/firestoreService.ts';
 import { openRazorpayCheckout } from '../../services/razorpayService.ts';
+import { downloadDonationPDFReport } from '../../services/pdfReportService.ts';
 
 export interface RazorpayDonateModalProps {
   isOpen: boolean;
@@ -46,6 +48,8 @@ export const RazorpayDonateModal: React.FC<RazorpayDonateModalProps> = ({
   const [loading, setLoading] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [completedPaymentId, setCompletedPaymentId] = useState<string | null>(null);
+  const [createdDonationId, setCreatedDonationId] = useState<string | null>(null);
+  const [downloadingPDF, setDownloadingPDF] = useState<boolean>(false);
   const [guestName, setGuestName] = useState<string>('');
 
   // Update step based on auth status when modal opens or user logs in
@@ -145,6 +149,7 @@ export const RazorpayDonateModal: React.FC<RazorpayDonateModalProps> = ({
               proofNote: `Payment verified via Razorpay ID: ${razorpayPaymentId}`
             });
 
+            setCreatedDonationId(newDonationId);
             setCompletedPaymentId(razorpayPaymentId);
             setLoading(false);
             setStep('success');
@@ -491,13 +496,46 @@ export const RazorpayDonateModal: React.FC<RazorpayDonateModalProps> = ({
                 </div>
               </div>
 
-              <button
-                type="button"
-                onClick={onClose}
-                className="w-full py-3 bg-gray-900 hover:bg-gray-800 text-white font-extrabold text-xs rounded-xl shadow-md transition cursor-pointer"
-              >
-                Close & View Relief Ledger
-              </button>
+              <div className="space-y-2 pt-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    if (createdDonationId) {
+                      setDownloadingPDF(true);
+                      try {
+                        await downloadDonationPDFReport(createdDonationId);
+                      } catch (err) {
+                        console.error('Failed to download PDF:', err);
+                        alert('Could not download PDF report. Please try from My Donations tab.');
+                      } finally {
+                        setDownloadingPDF(false);
+                      }
+                    }
+                  }}
+                  disabled={downloadingPDF || !createdDonationId}
+                  className="w-full py-3 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-extrabold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
+                >
+                  {downloadingPDF ? (
+                    <>
+                      <Loader2 size={15} className="animate-spin text-white" />
+                      <span>Generating Live PDF Report...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Download size={15} />
+                      <span>Download PDF Audit Report</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="w-full py-2.5 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl transition cursor-pointer"
+                >
+                  Close & View Relief Ledger
+                </button>
+              </div>
             </div>
           )}
         </motion.div>

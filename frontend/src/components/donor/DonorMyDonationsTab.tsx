@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Receipt, ShieldCheck, Download, Heart, ArrowUpRight, Clock, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Receipt, ShieldCheck, Download, Heart, ArrowUpRight, Clock, CheckCircle2, AlertCircle, FileText, Loader2 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { Donation } from '../../types.ts';
 import { subscribeToDonations } from '../../services/firestoreService.ts';
+import { downloadDonationPDFReport } from '../../services/pdfReportService.ts';
 
 interface DonorMyDonationsTabProps {
   onNavigateToBrowse: () => void;
@@ -13,6 +14,7 @@ export const DonorMyDonationsTab: React.FC<DonorMyDonationsTabProps> = ({ onNavi
   const { user, donorProfile } = useAuth();
   const [donations, setDonations] = useState<Donation[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToDonations((allDonations) => {
@@ -28,6 +30,19 @@ export const DonorMyDonationsTab: React.FC<DonorMyDonationsTabProps> = ({ onNavi
     return () => unsubscribe();
   }, [user, donorProfile]);
 
+  const handleDownloadPDF = async (item: Donation) => {
+    const targetKey = item.id || item.sosReportId || 'temp';
+    try {
+      setDownloadingId(targetKey);
+      await downloadDonationPDFReport(item);
+    } catch (err) {
+      console.error('Failed to generate donation PDF:', err);
+      alert('Could not generate PDF report. Please try again.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   const totalGiven = donations.reduce((sum, d) => sum + (d.amount || 0), 0);
 
   return (
@@ -41,7 +56,7 @@ export const DonorMyDonationsTab: React.FC<DonorMyDonationsTabProps> = ({ onNavi
           <div>
             <h2 className="text-xl font-black text-gray-900 tracking-tight">My Disaster Relief Donations</h2>
             <p className="text-xs text-gray-500 mt-0.5">
-              Transparent ledger of all your contributions with 100% verified ground proof & tax receipts.
+              Transparent ledger of all your contributions with 100% verified ground proof & public PDF audit reports.
             </p>
           </div>
         </div>
@@ -62,14 +77,17 @@ export const DonorMyDonationsTab: React.FC<DonorMyDonationsTabProps> = ({ onNavi
 
       {/* Donations List */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold text-gray-800 px-1">Disbursement Records ({donations.length})</h3>
+        <div className="flex items-center justify-between px-1">
+          <h3 className="text-sm font-bold text-gray-800">Disbursement Records ({donations.length})</h3>
+          <span className="text-[11px] text-gray-400">PDF audit reports available at any verification stage</span>
+        </div>
 
         {donations.length === 0 ? (
           <div className="bg-white rounded-3xl p-8 border border-gray-100 text-center space-y-3">
             <Heart size={32} className="text-gray-300 mx-auto" />
             <p className="text-sm font-bold text-gray-700">No donations yet on your account</p>
             <p className="text-xs text-gray-400 max-w-sm mx-auto">
-              Your first contribution will generate an immutable blockchain-style audit ledger with live photos of aid deployment.
+              Your first contribution will generate an immutable public audit ledger with live photos of aid deployment.
             </p>
             <button
               onClick={onNavigateToBrowse}
@@ -80,37 +98,65 @@ export const DonorMyDonationsTab: React.FC<DonorMyDonationsTabProps> = ({ onNavi
           </div>
         ) : (
           <div className="space-y-3">
-            {donations.map((item, idx) => (
-              <div
-                key={item.id || idx}
-                className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-mono text-xs font-bold text-gray-900">
-                      {item.sosReportId || `RELIEF-${idx + 1}`}
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                      {item.status}
-                    </span>
-                  </div>
-                  <p className="text-xs font-semibold text-gray-700">{item.sosLocationName || 'Emergency Flood Relief'}</p>
-                  <p className="text-[11px] text-gray-500">{item.purpose || 'Emergency supplies & ration kit'}</p>
-                  {item.proofNote && (
-                    <p className="text-[10px] text-emerald-700 bg-emerald-50/80 px-2 py-1 rounded-md mt-1">
-                      🔍 Audit Proof: {item.proofNote}
-                    </p>
-                  )}
-                </div>
+            {donations.map((item, idx) => {
+              const itemKey = item.id || item.sosReportId || `item-${idx}`;
+              const isGenerating = downloadingId === itemKey;
 
-                <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto gap-2 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
-                  <span className="text-base font-black text-gray-900">₹{item.amount.toLocaleString('en-IN')}</span>
-                  <span className="text-[10px] text-gray-400">
-                    {new Date(item.timestamp).toLocaleDateString()}
-                  </span>
+              return (
+                <div
+                  key={item.id || idx}
+                  className="bg-white rounded-2xl p-5 border border-gray-100 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 transition hover:border-gray-200"
+                >
+                  <div className="space-y-1 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-bold text-gray-900">
+                        {item.sosReportId || `RELIEF-${idx + 1}`}
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                        {item.status || 'Donation Received'}
+                      </span>
+                    </div>
+                    <p className="text-xs font-semibold text-gray-700">{item.sosLocationName || 'Emergency Flood Relief'}</p>
+                    <p className="text-[11px] text-gray-500">{item.purpose || 'Emergency supplies & ration kit'}</p>
+                    {item.proofNote && (
+                      <p className="text-[10px] text-emerald-700 bg-emerald-50/80 px-2 py-1 rounded-md mt-1">
+                        🔍 Audit Proof: {item.proofNote}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex sm:flex-col items-end justify-between w-full sm:w-auto gap-2.5 border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100 shrink-0">
+                    <div className="text-left sm:text-right">
+                      <span className="text-base font-black text-gray-900 block">₹{item.amount.toLocaleString('en-IN')}</span>
+                      <span className="text-[10px] text-gray-400">
+                        {new Date(item.timestamp).toLocaleDateString()}
+                      </span>
+                    </div>
+
+                    {/* Download PDF Report Button */}
+                    <button
+                      type="button"
+                      onClick={() => handleDownloadPDF(item)}
+                      disabled={isGenerating}
+                      className="px-3.5 py-1.5 bg-gray-50 hover:bg-teal-50 text-gray-700 hover:text-[#0F9D8F] border border-gray-200 hover:border-teal-300 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer disabled:opacity-50 shadow-2xs"
+                      title="Download real-time PDF accountability report"
+                    >
+                      {isGenerating ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin text-[#0F9D8F]" />
+                          <span>Generating...</span>
+                        </>
+                      ) : (
+                        <>
+                          <Download size={13} className="text-[#0F9D8F]" />
+                          <span>Download PDF Report</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
