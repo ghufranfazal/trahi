@@ -261,6 +261,149 @@ app.post("/api/classify-sos", async (req, res) => {
   }
 });
 
+// TrahiGPT First-Aid & Emergency Response Chat Endpoint
+app.post("/api/trahigpt-chat", async (req, res) => {
+  try {
+    const { prompt, history = [] } = req.body;
+
+    if (!prompt || typeof prompt !== "string") {
+      return res.status(400).json({ error: "Missing or invalid prompt string" });
+    }
+
+    const ai = getGenAI();
+
+    if (ai) {
+      try {
+        const systemInstruction = `You are TrahiGPT, an expert AI Emergency Triage & First-Aid Assistant for India.
+Your mission is to provide life-saving, panic-resistant, step-by-step first aid protocols, disaster survival instructions, and emergency guidance.
+Format your responses cleanly using Markdown:
+- Bold crucial action items (e.g. **Step 1: Check for breathing**)
+- Use structured bullet points (- item)
+- Highlight critical warnings (e.g. > 🚨 **EMERGENCY WARNING**: Do not apply ice directly to burns)
+- Mention relevant Indian emergency hotlines when applicable: **112** (National Emergency), **108** (Ambulance), **101** (Fire), **100** (Police).
+Keep guidance clear, high-contrast readable, precise, and actionable in low-time/distress situations.`;
+
+        // Format history for Gemini contents
+        const contents: any[] = [];
+        for (const msg of history.slice(-6)) {
+          contents.push({
+            role: msg.sender === "user" ? "user" : "model",
+            parts: [{ text: msg.text }],
+          });
+        }
+        contents.push({
+          role: "user",
+          parts: [{ text: prompt }],
+        });
+
+        const response = await ai.models.generateContent({
+          model: "gemini-3.7-flash",
+          config: {
+            systemInstruction,
+            temperature: 0.3,
+          },
+          contents,
+        });
+
+        const replyText = response.text || "Emergency system active. Please specify your situation.";
+        return res.json({
+          success: true,
+          reply: replyText,
+          provider: "gemini-3.7-flash",
+        });
+      } catch (geminiErr: any) {
+        console.warn("Gemini TrahiGPT Chat API call failed, falling back to local protocol engine:", geminiErr?.message || geminiErr);
+      }
+    }
+
+    // Heuristic Fallback Engine for offline / missing API key scenarios
+    const q = prompt.toLowerCase();
+    let reply = "";
+
+    if (q.includes("cpr") || q.includes("cardiac") || q.includes("heart attack") || q.includes("breath")) {
+      reply = `### 🩺 Emergency CPR & Cardiac Response Protocol
+
+> 🚨 **CALL IMMEDIATELY**: Dial **112** or **108** for an emergency ambulance before starting CPR.
+
+#### **Step-by-Step Hands-Only CPR:**
+1. **Position the Victim**: Place the person flat on their back on a firm surface.
+2. **Hand Placement**: Place the heel of one hand in the center of their chest (on lower half of breastbone). Lock second hand over the first with fingers interlaced.
+3. **Chest Compressions**: Push hard and fast at a rate of **100 to 120 compressions per minute** (matching the rhythm of *"Stayin' Alive"*).
+4. **Depth**: Allow the chest to recoil completely between compressions (approx 2 inches or 5 cm deep).
+5. **Continue**: Do not stop until professional paramedic assistance arrives or an AED is available.`;
+    } else if (q.includes("burn") || q.includes("scald") || q.includes("fire")) {
+      reply = `### 🔥 Severe Burn & Scald First-Aid Protocol
+
+> 🚨 **CALL IMMEDIATELY**: Dial **101** (Fire Department) and **108** (Ambulance).
+
+#### **Immediate First-Aid Steps:**
+1. **Cool the Burn**: Immediately run clean, cool tap water over the burn for **10 to 20 minutes**.
+2. **Protect the Area**: Cover loosely with a sterile non-stick bandage or clean plastic wrap.
+3. **Remove Constriction**: Remove rings, watches, or tight clothing near the burn area before swelling starts.
+
+> ⚠️ **CRITICAL WARNINGS**:
+> - **DO NOT** use ice, ice water, butter, oil, or toothpaste on burns.
+> - **DO NOT** break blisters to prevent severe bacterial infection.`;
+    } else if (q.includes("snake") || q.includes("bite") || q.includes("venom")) {
+      reply = `### 🐍 Snakebite Emergency Triage (India Protocol)
+
+> 🚨 **EMERGENCY WARNING**: Treat all snakebites in India as potentially venomous (e.g. Cobra, Russell's Viper, Krait, Saw-scaled Viper). Call **108** immediately.
+
+#### **Life-Saving Action Plan:**
+1. **Stay Calm & Immobilize**: Keep the victim completely still. Keep the bitten limb **below heart level** to slow venom spread.
+2. **Remove Jewelry/Tight Items**: Rings, anklets, and shoes near the bite must be removed before swelling begins.
+3. **Clean Lightly**: Wipe wound surface gently with clean water. Cover loosely with sterile cloth.
+
+> ⚠️ **DO NOT DO THE FOLLOWING**:
+> - **DO NOT** cut the wound or try to suck out venom.
+> - **DO NOT** apply tight tourniquets or ice.
+> - **DO NOT** give aspirin or pain relievers that increase bleeding.`;
+    } else if (q.includes("bleed") || q.includes("wound") || q.includes("cut") || q.includes("haemorrhage")) {
+      reply = `### 🩸 Severe Bleeding Control Protocol
+
+> 🚨 **CALL IMMEDIATELY**: Dial **108** (Ambulance) if blood is spurting or wound is deep.
+
+#### **Direct Pressure Protocol:**
+1. **Direct Firm Pressure**: Press a clean cloth or sterile gauze firmly over the bleeding wound using both hands.
+2. **Elevate Bitten/Injured Limb**: If possible, raise the bleeding limb above the level of the heart while continuing firm pressure.
+3. **Add Layers**: If blood soaks through, do not remove original cloth. Place more cloths directly on top and press harder.
+4. **Bandage Securely**: Wrap tightly with a roller bandage to hold pressure.`;
+    } else if (q.includes("flood") || q.includes("water") || q.includes("submerge")) {
+      reply = `### 🌊 Flash Flood Survival & Rescue Guidance
+
+> 🚨 **NATIONAL DISASTER RESPONSE (NDRF)**: Dial **1078** or **112** for water rescue.
+
+#### **Immediate Survival Steps:**
+1. **Move High**: Move immediately to higher ground or upper floors. Avoid basements and low-lying roads.
+2. **Avoid Moving Water**: Never walk or drive through flowing water. 6 inches of swift water can sweep a person away.
+3. **Turn Off Utilities**: Shut off main electricity switches and gas valves if safe to do so.
+4. **Signal Location**: Use a whistle, bright cloth, or flashlight to alert rescue helicopters/boats.`;
+    } else {
+      reply = `### 🛡️ Trahi First-Aid Triage Guidance
+
+Thank you for reaching out to **TrahiGPT**. I am your dedicated emergency assistant.
+
+#### **Key Disaster & Medical Hotlines in India:**
+- 📞 **112**: All-in-One National Emergency Response System
+- 🚑 **108**: Medical Emergency & Paramedic Ambulance
+- 🚒 **101**: Fire & Rescue Services
+- 🚓 **100**: Police Helpline
+- 🌊 **1078**: Disaster Management (NDRF)
+
+*Please describe your specific emergency situation (e.g., CPR instructions, burn treatment, snakebite, bleeding control, or earthquake shelter) for step-by-step guidance.*`;
+    }
+
+    return res.json({
+      success: true,
+      reply,
+      provider: "local_heuristic_fallback",
+    });
+  } catch (error: any) {
+    console.error("Error in /api/trahigpt-chat:", error);
+    return res.status(500).json({ error: error.message || "Failed to process chat query" });
+  }
+});
+
 // Mount Vite middleware for development / Static files for production
 async function setupServer() {
   if (process.env.NODE_ENV !== "production") {
