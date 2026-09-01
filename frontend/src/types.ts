@@ -82,6 +82,7 @@ export interface SOSReport {
 }
 
 export type DonationStatus = 
+  | 'Donation Received'
   | 'Received' 
   | 'Verifying' 
   | 'Approved' 
@@ -94,7 +95,10 @@ export interface Donation {
   sosReportId: string;
   donorName: string;
   donorUserId?: string;
+  donorId?: string;
+  donorEmail?: string;
   amount: number;
+  razorpayPaymentId?: string;
   status: DonationStatus;
   timestamp: number;
   sosLocationName?: string;

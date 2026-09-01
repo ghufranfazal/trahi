@@ -4,6 +4,7 @@ import { db } from '../firebase.ts';
 import { Donation, DonationStatus } from '../types.ts';
 import { seedDonationsIfEmpty, createDonation, updateDonationStatus } from '../services/firestoreService.ts';
 import { useAuth } from '../context/AuthContext.tsx';
+import { RazorpayDonateModal } from './donor/RazorpayDonateModal.tsx';
 import { 
   Heart, 
   CheckCircle2, 
@@ -394,106 +395,13 @@ export const DonationsTracker: React.FC = () => {
         </div>
       </div>
 
-      {/* New Donation Modal */}
-      <AnimatePresence>
-        {showNewModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 10 }}
-              className="bg-white rounded-3xl max-w-md w-full p-6 sm:p-7 shadow-2xl border border-gray-100"
-            >
-              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-                <div className="flex items-center gap-2 text-gray-900 font-bold text-base">
-                  <Heart size={20} className="text-[#F0294D]" />
-                  <span>Pledge Emergency Relief</span>
-                </div>
-                <button
-                  onClick={() => setShowNewModal(false)}
-                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-
-              <form onSubmit={handleCreateDonation} className="mt-4 space-y-3.5">
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Donor Name</label>
-                  <input
-                    type="text"
-                    value={donorName}
-                    onChange={(e) => setDonorName(e.target.value)}
-                    placeholder="Enter your name"
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:ring-2 focus:ring-[#0F9D8F]/30 focus:border-[#0F9D8F] outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Donation Amount (INR)</label>
-                  <div className="grid grid-cols-4 gap-2 mb-2">
-                    {[1000, 2500, 5000, 10000].map((val) => (
-                      <button
-                        type="button"
-                        key={val}
-                        onClick={() => setAmount(val)}
-                        className={`py-1.5 rounded-lg text-xs font-bold border transition ${
-                          amount === val
-                            ? 'bg-[#0F9D8F] text-white border-[#0F9D8F]'
-                            : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                        }`}
-                      >
-                        ₹{val}
-                      </button>
-                    ))}
-                  </div>
-                  <input
-                    type="number"
-                    value={amount}
-                    onChange={(e) => setAmount(Number(e.target.value))}
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:ring-2 focus:ring-[#0F9D8F]/30 focus:border-[#0F9D8F] outline-none"
-                    required
-                    min={100}
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Relief Camp Location</label>
-                  <input
-                    type="text"
-                    value={locationName}
-                    onChange={(e) => setLocationName(e.target.value)}
-                    placeholder="e.g. Silchar Flood Relief Camp"
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:ring-2 focus:ring-[#0F9D8F]/30 focus:border-[#0F9D8F] outline-none"
-                    required
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 mb-1">Relief Purpose</label>
-                  <input
-                    type="text"
-                    value={purpose}
-                    onChange={(e) => setPurpose(e.target.value)}
-                    placeholder="e.g. Water purification & emergency medicine"
-                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-800 focus:ring-2 focus:ring-[#0F9D8F]/30 focus:border-[#0F9D8F] outline-none"
-                    required
-                  />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="mt-2 w-full py-3 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-bold rounded-xl text-xs sm:text-sm shadow-md transition cursor-pointer disabled:opacity-50"
-                >
-                  {submitting ? 'Connecting Firestore...' : 'Confirm & Log Disaster Relief Entry'}
-                </button>
-              </form>
-            </motion.div>
-          </div>
-        )}
-      </AnimatePresence>
+      {/* Razorpay Payment Gateway & Auth Gate Modal */}
+      <RazorpayDonateModal
+        isOpen={showNewModal}
+        onClose={() => setShowNewModal(false)}
+        targetCrisisTitle="Disaster Relief Emergency Fund"
+        targetLocationName="National Disaster Relief Campaign, India"
+      />
     </div>
   );
 };

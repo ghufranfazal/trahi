@@ -34,8 +34,7 @@ import { useLocation } from '../../context/LocationContext.tsx';
 import { getCategoryConfig, CATEGORY_CONFIGS } from '../donor/DonorCrisisMapTab.tsx';
 import { CrisisDetailsModal, SelectedCrisisItem } from '../donor/CrisisDetailsModal.tsx';
 import { HomeMiniCrisisMap } from './HomeMiniCrisisMap.tsx';
-import { PaymentSimModal } from './PaymentSimModal.tsx';
-import { GoogleDonorLoginModal } from './GoogleDonorLoginModal.tsx';
+import { RazorpayDonateModal } from '../donor/RazorpayDonateModal.tsx';
 
 interface HomeDashboardProps {
   onNavigateToSOS: () => void;
@@ -217,19 +216,10 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
     });
   }, [reportsWithDistance, selectedCategory, radiusKm, searchQuery]);
 
-  // Donate flow trigger: check if Google user
+  // Donate flow trigger: open Razorpay Donate Modal (Auth Gate & Checkout handled inside modal)
   const handleTriggerDonate = (crisisTitle?: string, reportId?: string) => {
     setPaymentTargetTitle(crisisTitle || 'Emergency Disaster Relief Fund');
     setPaymentTargetSosId(reportId);
-
-    if (isGoogleUser) {
-      setIsPaymentModalOpen(true);
-    } else {
-      setIsGoogleLoginModalOpen(true);
-    }
-  };
-
-  const handleGoogleLoginSuccess = () => {
     setIsPaymentModalOpen(true);
   };
 
@@ -765,15 +755,8 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
         onDonateToCrisis={(title, reportId) => handleTriggerDonate(title, reportId)}
       />
 
-      {/* 2. Google Donor Sign-In Modal (Triggered if unauthenticated donor clicks Donate) */}
-      <GoogleDonorLoginModal
-        isOpen={isGoogleLoginModalOpen}
-        onClose={() => setIsGoogleLoginModalOpen(false)}
-        onSuccess={handleGoogleLoginSuccess}
-      />
-
-      {/* 3. Fast Payment Gateway Simulation Modal */}
-      <PaymentSimModal
+      {/* 2. Reusable Razorpay Payment Gateway & Auth Gate Modal */}
+      <RazorpayDonateModal
         isOpen={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         targetCrisisTitle={paymentTargetTitle}
