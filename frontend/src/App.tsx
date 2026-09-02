@@ -13,6 +13,7 @@ import { DonorProfileSetup } from './components/donor/DonorProfileSetup.tsx';
 import { DonorPageShell } from './components/donor/DonorPageShell.tsx';
 import { HomeDashboard } from './components/home/HomeDashboard.tsx';
 import { TrahiGPTView } from './components/trahigpt/TrahiGPTView.tsx';
+import { PreparednessTab } from './components/preparedness/PreparednessTab.tsx';
 import { TabType, DonorProfile, DonorTabType, SafetyCircleMember } from './types.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { useLocation, LocationProvider } from './context/LocationContext.tsx';
@@ -229,6 +230,11 @@ function MainApp() {
           /* User Profile Screen with Firestore Data Sync */
           <main className="flex-1 w-full overflow-y-auto pb-24 md:pb-6">
             <ProfileView onNavigateToSOS={() => setActiveTab('sos')} />
+          </main>
+        ) : activeTab === 'preparedness' ? (
+          /* Regional Hazard Engine & Dynamic Preparedness Safety Kit */
+          <main className="flex-1 w-full overflow-y-auto pb-24 md:pb-6">
+            <PreparednessTab />
           </main>
         ) : activeTab === 'home' ? (
           /* Situational Awareness & Community Overview Dashboard */

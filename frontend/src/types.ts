@@ -1,4 +1,4 @@
-export type TabType = 'home' | 'trahigpt' | 'sos' | 'donate' | 'profile';
+export type TabType = 'home' | 'trahigpt' | 'sos' | 'preparedness' | 'donate' | 'profile';
 
 export type DonorTabType = 'back' | 'map' | 'donate' | 'history' | 'profile';
 
