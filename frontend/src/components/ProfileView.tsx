@@ -12,13 +12,15 @@ import {
   Info,
   Calendar,
   Activity,
-  ArrowRight
+  ArrowRight,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { useLocation } from '../context/LocationContext.tsx';
 import { saveUserProfileToFirestore } from '../services/firestoreService.ts';
 import { UserProfile, UserLocationDetails } from '../types.ts';
+import { SafetyCircleManager } from './safety/SafetyCircleManager.tsx';
 
 interface ProfileViewProps {
   onNavigateToSOS?: () => void;
@@ -27,6 +29,9 @@ interface ProfileViewProps {
 export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigateToSOS }) => {
   const { user, userProfile, updateUserProfileState } = useAuth();
   const { location, refreshLocation, isLocating } = useLocation();
+
+  // Active Tab: 'safety_circle' | 'medical_details'
+  const [activeTab, setActiveTab] = useState<'safety_circle' | 'medical_details'>('safety_circle');
 
   // Form State
   const [name, setName] = useState<string>('');
@@ -237,12 +242,45 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigateToSOS }) => 
         )}
       </AnimatePresence>
 
-      {/* Profile Form */}
-      <form onSubmit={handleSaveProfile} className="space-y-6">
-        {/* Section 1: Personal & Medical Information */}
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-5">
-          <div className="flex items-center justify-between pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-2 text-gray-900 font-bold text-sm sm:text-base">
+      {/* Tab Switcher: Safety Circle vs Medical Details */}
+      <div className="flex items-center gap-2 p-1.5 bg-gray-100/80 rounded-2xl border border-gray-200/80 max-w-md mx-auto">
+        <button
+          type="button"
+          onClick={() => setActiveTab('safety_circle')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'safety_circle'
+              ? 'bg-white text-gray-900 shadow-xs'
+              : 'text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          <Users size={15} className={activeTab === 'safety_circle' ? 'text-[#0F9D8F]' : ''} />
+          <span>Safety Circle & Pings</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setActiveTab('medical_details')}
+          className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-black transition flex items-center justify-center gap-2 cursor-pointer ${
+            activeTab === 'medical_details'
+              ? 'bg-white text-gray-900 shadow-xs'
+              : 'text-gray-500 hover:text-gray-800'
+          }`}
+        >
+          <User size={15} className={activeTab === 'medical_details' ? 'text-[#0F9D8F]' : ''} />
+          <span>Medical & Location</span>
+        </button>
+      </div>
+
+      {/* Dynamic Content based on activeTab */}
+      {activeTab === 'safety_circle' ? (
+        <SafetyCircleManager />
+      ) : (
+        /* Profile Form */
+        <form onSubmit={handleSaveProfile} className="space-y-6">
+          {/* Section 1: Personal & Medical Information */}
+          <div className="bg-white rounded-3xl p-6 sm:p-8 border border-gray-100 shadow-sm space-y-5">
+            <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+              <div className="flex items-center gap-2 text-gray-900 font-bold text-sm sm:text-base">
               <User size={18} className="text-[#0F9D8F]" />
               <span>Personal & Medical Info</span>
             </div>
@@ -455,6 +493,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({ onNavigateToSOS }) => 
           </button>
         </div>
       </form>
+      )}
     </div>
   );
 };

@@ -1,7 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhoneCall, ShieldAlert, Radio, AlertTriangle, Activity, HeartHandshake } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
+import { subscribeToMySafetyCircle } from '../services/firestoreService.ts';
+import { SafetyCircleMember } from '../types.ts';
+import { FamilySafetyPingWidget } from './safety/FamilySafetyPingWidget.tsx';
+import { AddFamilyMemberModal } from './safety/AddFamilyMemberModal.tsx';
 
-export const EmergencyPanel: React.FC = () => {
+interface EmergencyPanelProps {
+  onNavigateToProfile?: () => void;
+}
+
+export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ onNavigateToProfile }) => {
+  const { user } = useAuth();
+  const [members, setMembers] = useState<SafetyCircleMember[]>([]);
+  const [isAddOpen, setIsAddOpen] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeToMySafetyCircle(user.uid, (data) => setMembers(data));
+    return () => unsub();
+  }, [user]);
   const helplines = [
     { label: 'National All-in-One', number: '112', desc: 'Police, Fire, Medical, Disaster', color: 'red' },
     { label: 'Police Control', number: '100', desc: 'Direct Police Dispatch', color: 'teal' },
@@ -13,7 +31,13 @@ export const EmergencyPanel: React.FC = () => {
 
   return (
     <div id="desktop-emergency-panel" className="flex flex-col gap-5 w-full">
-      {/* 1. Live Readiness Status Card */}
+      {/* 1. Feature 3: One-Tap Safety Circle & Family Ping Widget */}
+      <FamilySafetyPingWidget
+        familyMembers={members}
+        onOpenAddMember={() => setIsAddOpen(true)}
+      />
+
+      {/* 2. Live Readiness Status Card */}
       <div className="bg-white rounded-3xl p-5 lg:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -79,6 +103,12 @@ export const EmergencyPanel: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Add Family Member Modal */}
+      <AddFamilyMemberModal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+      />
     </div>
   );
 };

@@ -13,13 +13,14 @@ import { DonorProfileSetup } from './components/donor/DonorProfileSetup.tsx';
 import { DonorPageShell } from './components/donor/DonorPageShell.tsx';
 import { HomeDashboard } from './components/home/HomeDashboard.tsx';
 import { TrahiGPTView } from './components/trahigpt/TrahiGPTView.tsx';
-import { TabType, DonorProfile, DonorTabType } from './types.ts';
+import { TabType, DonorProfile, DonorTabType, SafetyCircleMember } from './types.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { useLocation, LocationProvider } from './context/LocationContext.tsx';
 import { NetworkProvider } from './context/NetworkContext.tsx';
 import { SMSDispatchModal } from './components/network/SMSDispatchModal.tsx';
 import { BLEMeshDemoModal } from './components/network/BLEMeshDemoModal.tsx';
-import { createSOSReport } from './services/firestoreService.ts';
+import { FamilySafetyPingWidget } from './components/safety/FamilySafetyPingWidget.tsx';
+import { createSOSReport, subscribeToMySafetyCircle } from './services/firestoreService.ts';
 import { 
   Sparkles, 
   Heart, 
@@ -49,6 +50,14 @@ function MainApp() {
   const [isInDonorMode, setIsInDonorMode] = useState<boolean>(false);
   const [donorInitialTab, setDonorInitialTab] = useState<DonorTabType>('donate');
   const [sosTriggeredMessage, setSosTriggeredMessage] = useState<string | null>(null);
+  const [safetyMembers, setSafetyMembers] = useState<SafetyCircleMember[]>([]);
+
+  // Subscribe to user safety circle members in real-time
+  React.useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeToMySafetyCircle(user.uid, (data) => setSafetyMembers(data));
+    return () => unsub();
+  }, [user]);
 
   // Handle SOS success callback
   const handleSOSSuccess = (result: any) => {
@@ -153,6 +162,14 @@ function MainApp() {
               {/* Location Map Widget placed below circular SOS pulse button */}
               <div className="w-full flex justify-center pb-2">
                 <LocationMapWidget />
+              </div>
+
+              {/* Mobile 1-Tap Safety Circle & Family Ping */}
+              <div className="w-full max-w-sm">
+                <FamilySafetyPingWidget
+                  familyMembers={safetyMembers}
+                  onOpenAddMember={() => setActiveTab('profile')}
+                />
               </div>
             </div>
 

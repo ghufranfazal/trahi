@@ -6,13 +6,15 @@ import {
   getDocs,
   addDoc,
   updateDoc,
+  deleteDoc,
   query,
+  where,
   orderBy,
   onSnapshot,
   writeBatch
 } from 'firebase/firestore';
 import { db } from '../firebase.ts';
-import { SOSReport, Donation, UserProfile, DonationStatus, DonorProfile } from '../types.ts';
+import { SOSReport, Donation, UserProfile, DonationStatus, DonorProfile, SafetyCircleMember, SafetyStatus } from '../types.ts';
 
 // Initial dummy donations to seed the Firestore database
 export const SEED_DONATIONS: Omit<Donation, 'id'>[] = [
@@ -480,3 +482,105 @@ export async function saveDonorProfile(donor: DonorProfile): Promise<void> {
 
   await setDoc(donorDocRef, payload, { merge: true });
 }
+
+// ============================================================================
+// FEATURE 3: SAFETY CIRCLE & FAMILY PINGS FIRESTORE SERVICES
+// ============================================================================
+
+/**
+ * Add a new family member to user's safety circle
+ */
+export async function addSafetyCircleMember(member: Omit<SafetyCircleMember, 'id'>): Promise<string> {
+  const circlesRef = collection(db, 'safety_circles');
+  const docRef = await addDoc(circlesRef, {
+    ...member,
+    createdAt: member.createdAt || new Date().toISOString(),
+  });
+  return docRef.id;
+}
+
+/**
+ * Realtime subscription to members added by the current user
+ */
+export function subscribeToMySafetyCircle(
+  userUid: string, 
+  callback: (members: SafetyCircleMember[]) => void
+): () => void {
+  if (!userUid) return () => {};
+  const circlesRef = collection(db, 'safety_circles');
+  const q = query(circlesRef, where('addedByUid', '==', userUid));
+
+  return onSnapshot(q, (snapshot) => {
+    const items: SafetyCircleMember[] = [];
+    snapshot.forEach((docSnap) => {
+      items.push({ id: docSnap.id, ...docSnap.data() } as SafetyCircleMember);
+    });
+    callback(items);
+  }, (err) => {
+    console.warn("Safety circle subscription warning:", err);
+  });
+}
+
+/**
+ * Realtime subscription to incoming family links where current user's email was added by someone else
+ */
+export function subscribeToIncomingFamilyLinks(
+  userEmail: string, 
+  callback: (links: SafetyCircleMember[]) => void
+): () => void {
+  if (!userEmail) return () => {};
+  const circlesRef = collection(db, 'safety_circles');
+  const q = query(circlesRef, where('familyMemberEmail', '==', userEmail.toLowerCase().trim()));
+
+  return onSnapshot(q, (snapshot) => {
+    const items: SafetyCircleMember[] = [];
+    snapshot.forEach((docSnap) => {
+      items.push({ id: docSnap.id, ...docSnap.data() } as SafetyCircleMember);
+    });
+    callback(items);
+  }, (err) => {
+    console.warn("Incoming family links subscription warning:", err);
+  });
+}
+
+/**
+ * Delete a safety circle family member
+ */
+export async function deleteSafetyCircleMember(memberDocId: string): Promise<void> {
+  const memberDocRef = doc(db, 'safety_circles', memberDocId);
+  await deleteDoc(memberDocRef);
+}
+
+/**
+ * Update user's live safety status ("SAFE" or "DISTRESS") and location in Firestore
+ */
+export async function updateUserSafetyStatus(
+  uid: string, 
+  status: 'SAFE' | 'DISTRESS',
+  locationData?: { latitude: number; longitude: number; address: string },
+  batteryLevel?: number | string
+): Promise<void> {
+  if (!uid) return;
+  const userDocRef = doc(db, 'users', uid);
+  
+  const payload: any = {
+    lastSafetyStatus: status,
+    lastStatusTimestamp: Date.now(),
+    updatedAt: Date.now(),
+  };
+
+  if (locationData) {
+    payload.lastKnownLocation = {
+      latitude: locationData.latitude,
+      longitude: locationData.longitude,
+      address: locationData.address || '',
+    };
+  }
+
+  if (batteryLevel !== undefined) {
+    payload.batteryLevel = batteryLevel;
+  }
+
+  await setDoc(userDocRef, payload, { merge: true });
+}
+
