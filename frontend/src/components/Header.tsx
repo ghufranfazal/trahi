@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Info, X, PhoneCall, ShieldAlert, LogOut, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext.tsx';
+import { NetworkStatusIndicator } from './network/NetworkStatusIndicator.tsx';
 
 interface HeaderProps {
   onOpenProfile?: () => void;
@@ -15,9 +16,9 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
 
   return (
     <>
-      <header id="main-header" className="w-full flex items-center justify-between px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 pb-3">
+      <header id="main-header" className="w-full flex items-center justify-between px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 pb-3 gap-2">
         {/* Left: Red exclamation badge + Emergency call title */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2.5 shrink-0">
           <div 
             id="emergency-icon-badge" 
             className="w-6 h-6 sm:w-7 sm:h-7 bg-[#F0294D] rounded-full flex items-center justify-center shrink-0 shadow-xs"
@@ -34,8 +35,10 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
           </div>
         </div>
 
-        {/* Right: Info / Helplines Modal trigger & Mobile Auth status */}
-        <div className="flex items-center gap-2">
+        {/* Center/Right: Network Status Indicator & Actions */}
+        <div className="flex items-center gap-2 sm:gap-3">
+          {/* Multi-State Network Indicator & Toggle */}
+          <NetworkStatusIndicator />
           {/* Active User Badge on mobile */}
           {userProfile && (
             <div className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-white rounded-full border border-gray-200 shadow-2xs">

@@ -34,6 +34,7 @@ import {
 import { EmergencyCategory } from '../../types.ts';
 import { useAuth } from '../../context/AuthContext.tsx';
 import { useLocation } from '../../context/LocationContext.tsx';
+import { useNetwork } from '../../context/NetworkContext.tsx';
 
 export type SOSFlowPhase = 'recording' | 'cancelling' | 'broadcasting' | 'success';
 
@@ -74,6 +75,7 @@ export const SOSFlowModal: React.FC<SOSFlowModalProps> = ({
 }) => {
   const { user } = useAuth();
   const { location } = useLocation();
+  const { networkMode, dispatchNativeSMS, setIsMeshModalOpen } = useNetwork();
 
   // Phase states: recording -> cancelling (3s) -> broadcasting -> success
   const [phase, setPhase] = useState<SOSFlowPhase>('recording');
@@ -274,6 +276,27 @@ export const SOSFlowModal: React.FC<SOSFlowModalProps> = ({
 
   // 5. Execute SOS Broadcast to Backend & Firestore
   const executeBroadcast = async () => {
+    // Check if in BLE Mesh Demo mode
+    if (networkMode === 'mesh') {
+      onClose();
+      setIsMeshModalOpen(true);
+      return;
+    }
+
+    // Check if in SMS Dispatch mode or offline
+    if (networkMode === 'sms' || !navigator.onLine) {
+      onClose();
+      dispatchNativeSMS({
+        category: 'Emergency SOS Broadcast',
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        address: location?.formattedAddress,
+        transcript: transcript || 'Emergency voice distress beacon broadcast.',
+      });
+      return;
+    }
+
+    // Tier 1: Online Cloud Broadcast
     setPhase('broadcasting');
     setBroadcastStep(1);
     setBroadcastError(null);
@@ -310,11 +333,18 @@ export const SOSFlowModal: React.FC<SOSFlowModalProps> = ({
 
     } catch (err: any) {
       console.error("SOS submission error:", err);
-      setBroadcastError(err?.message || "Failed to broadcast SOS. Retrying fallback channel...");
-      // Still show success with local fallback if needed
+      setBroadcastError(err?.message || "Failed to broadcast SOS to cloud. Launching offline SMS channel...");
+      // Auto-fallback to SMS dispatch if cloud fails
       setTimeout(() => {
-        setPhase('success');
-      }, 1500);
+        onClose();
+        dispatchNativeSMS({
+          category: 'Emergency SOS Broadcast',
+          latitude: location?.latitude,
+          longitude: location?.longitude,
+          address: location?.formattedAddress,
+          transcript: transcript || 'Emergency distress signal.',
+        });
+      }, 1200);
     }
   };
 
@@ -626,19 +656,37 @@ export const SOSFlowModal: React.FC<SOSFlowModalProps> = ({
                 )}
               </div>
 
-              {/* Helpline Quick Dialer */}
-              <div className="w-full p-3 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-red-900 block">National Emergency Number</span>
-                  <span className="text-[11px] text-red-700">Dial 112 for direct police/ambulance/fire</span>
+              {/* Helpline Quick Dialer & Offline SMS Backup */}
+              <div className="w-full space-y-2">
+                <div className="p-3 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-between">
+                  <div>
+                    <span className="text-xs font-bold text-red-900 block">National Emergency Number</span>
+                    <span className="text-[11px] text-red-700">Dial 112 for direct police/ambulance/fire</span>
+                  </div>
+                  <a
+                    href="tel:112"
+                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+                  >
+                    <PhoneCall size={13} />
+                    <span>Call 112</span>
+                  </a>
                 </div>
-                <a
-                  href="tel:112"
-                  className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-xs cursor-pointer"
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    dispatchNativeSMS({
+                      category: submissionResult?.category || 'Emergency SOS',
+                      latitude: submissionResult?.latitude || location?.latitude,
+                      longitude: submissionResult?.longitude || location?.longitude,
+                      address: submissionResult?.userAddress || location?.formattedAddress,
+                      transcript: submissionResult?.transcript || transcript || 'Emergency distress beacon',
+                    });
+                  }}
+                  className="w-full py-2.5 px-3 bg-amber-50 hover:bg-amber-100 text-amber-900 border border-amber-200 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition cursor-pointer"
                 >
-                  <PhoneCall size={13} />
-                  <span>Call 112</span>
-                </a>
+                  <span>Dispatch 1-Tap SMS Backup to 112 →</span>
+                </button>
               </div>
 
               {/* Close / Return Button */}

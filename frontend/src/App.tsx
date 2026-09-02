@@ -16,6 +16,9 @@ import { TrahiGPTView } from './components/trahigpt/TrahiGPTView.tsx';
 import { TabType, DonorProfile, DonorTabType } from './types.ts';
 import { useAuth, AuthProvider } from './context/AuthContext.tsx';
 import { useLocation, LocationProvider } from './context/LocationContext.tsx';
+import { NetworkProvider } from './context/NetworkContext.tsx';
+import { SMSDispatchModal } from './components/network/SMSDispatchModal.tsx';
+import { BLEMeshDemoModal } from './components/network/BLEMeshDemoModal.tsx';
 import { createSOSReport } from './services/firestoreService.ts';
 import { 
   Sparkles, 
@@ -240,6 +243,10 @@ function MainApp() {
           activeTab={activeTab} 
           onTabChange={handleTabSelect} 
         />
+
+        {/* Global Network Dispatch Modals */}
+        <SMSDispatchModal />
+        <BLEMeshDemoModal />
       </div>
     </div>
   );
@@ -249,7 +256,9 @@ export default function App() {
   return (
     <AuthProvider>
       <LocationProvider>
-        <MainApp />
+        <NetworkProvider>
+          <MainApp />
+        </NetworkProvider>
       </LocationProvider>
     </AuthProvider>
   );
