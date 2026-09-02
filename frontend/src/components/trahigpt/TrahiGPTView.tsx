@@ -12,9 +12,8 @@ import {
   User,
   Copy,
   Check,
-  RotateCcw,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import {
   ChatMessage,
   ChatSession,
@@ -182,38 +181,38 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
     {
       title: 'CPR & Cardiac Response',
       desc: 'Hands-only CPR steps for adult',
-      icon: <HeartPulse className="text-red-400" size={18} />,
+      icon: <HeartPulse className="text-red-500" size={18} />,
       query: 'How to perform hands-only CPR on an unconscious adult in cardiac arrest?',
     },
     {
       title: 'Severe Burn Treatment',
       desc: 'First aid for thermal & chemical burns',
-      icon: <Flame className="text-orange-400" size={18} />,
+      icon: <Flame className="text-orange-500" size={18} />,
       query: 'What is the immediate first-aid protocol for severe burns and scalds?',
     },
     {
       title: 'Snakebite Emergency',
       desc: 'India venomous snakebite triage',
-      icon: <ShieldAlert className="text-amber-400" size={18} />,
+      icon: <ShieldAlert className="text-amber-500" size={18} />,
       query: 'What is the life-saving first-aid action plan for a snakebite in India?',
     },
     {
       title: 'Bleeding & Pressure Dressing',
       desc: 'Stopping heavy hemorrhage',
-      icon: <Droplets className="text-red-500" size={18} />,
+      icon: <Droplets className="text-red-600" size={18} />,
       query: 'How to control severe bleeding from a deep wound using direct pressure?',
     },
   ];
 
   return (
-    <div className="fixed inset-0 z-30 bg-slate-950 flex flex-col font-sans text-slate-100 select-none overflow-hidden">
+    <div className="fixed inset-0 z-30 bg-[#F7F7F8] flex flex-col font-sans text-gray-900 select-none overflow-hidden">
       {/* 1. Header Bar with Menu Toggle & Prominent Return Button (← Trahi SOS) */}
-      <header className="h-16 px-4 sm:px-6 bg-slate-900 border-b border-slate-800 flex items-center justify-between shrink-0 shadow-md">
+      <header className="h-16 px-4 sm:px-6 bg-white/95 backdrop-blur-md border-b border-gray-200/80 flex items-center justify-between shrink-0 shadow-2xs">
         {/* Left Side: Top-Left Collapsible Sidebar ("Hamburger") Button */}
         <div className="flex items-center gap-3">
           <button
             onClick={() => setIsSidebarOpen(true)}
-            className="w-10 h-10 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center justify-center transition border border-slate-700/70 cursor-pointer"
+            className="w-10 h-10 rounded-xl bg-gray-100 hover:bg-gray-200/80 text-gray-700 flex items-center justify-center transition border border-gray-200 cursor-pointer"
             title="Open Conversations Drawer (Swipe Right on screen)"
             aria-label="Toggle Navigation Drawer"
           >
@@ -221,17 +220,17 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
           </button>
 
           <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] flex items-center justify-center text-white shadow-xs">
+            <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] flex items-center justify-center text-white shadow-md shadow-[#0F9D8F]/25">
               <Sparkles size={18} />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-extrabold text-sm sm:text-base text-white">TrahiGPT</span>
-                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-900/60 text-red-300 border border-red-700/50">
+                <span className="font-extrabold text-sm sm:text-base text-gray-900">TrahiGPT</span>
+                <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-red-100 text-[#F0294D] border border-red-200/60">
                   First-Aid AI
                 </span>
               </div>
-              <p className="hidden sm:block text-[11px] text-slate-400">
+              <p className="hidden sm:block text-[11px] text-gray-400 font-medium">
                 Gemini 3.7 Flash Triage • Emergency Protocol Active
               </p>
             </div>
@@ -241,7 +240,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
         {/* Right Side: Prominent Return Button labeled `← Trahi SOS` */}
         <button
           onClick={onBackToSOS}
-          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#DC2626] hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-md shadow-red-900/40 active:scale-95 transition cursor-pointer border border-red-500/30"
+          className="flex items-center gap-2 px-3.5 py-2 rounded-2xl bg-[#DC2626] hover:bg-red-700 text-white font-black text-xs sm:text-sm shadow-md shadow-red-500/20 active:scale-95 transition cursor-pointer border border-red-600/30"
           title="Return to Main SOS Dashboard"
         >
           <ArrowLeft size={16} className="stroke-[3]" />
@@ -267,17 +266,17 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
           /* Empty / Welcome State with Quick Action Chips */
           <div className="flex flex-col items-center justify-center min-h-[70vh] py-8 text-center max-w-lg mx-auto space-y-6">
             <div className="relative">
-              <div className="w-16 h-16 rounded-3xl bg-[#0F9D8F]/20 text-[#0F9D8F] flex items-center justify-center mx-auto border border-[#0F9D8F]/40 shadow-lg shadow-[#0F9D8F]/10">
+              <div className="w-16 h-16 rounded-3xl bg-teal-50 text-[#0F9D8F] flex items-center justify-center mx-auto border border-teal-200/80 shadow-md shadow-[#0F9D8F]/10">
                 <Sparkles size={32} />
               </div>
-              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-red-500 animate-ping" />
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-[#DC2626] animate-ping" />
             </div>
 
             <div>
-              <h2 className="text-xl sm:text-2xl font-black text-white tracking-tight">
+              <h2 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
                 TrahiGPT First-Aid Intelligence
               </h2>
-              <p className="text-xs sm:text-sm text-slate-400 mt-2 leading-relaxed max-w-md mx-auto">
+              <p className="text-xs sm:text-sm text-gray-500 mt-2 leading-relaxed max-w-md mx-auto font-medium">
                 Instant emergency protocols, CPR instructions, burn treatment, and disaster survival guidance for India.
               </p>
             </div>
@@ -288,23 +287,23 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                 <button
                   key={i}
                   onClick={() => handleSendMessage(item.query)}
-                  className="p-3.5 rounded-2xl bg-slate-900 hover:bg-slate-800 border border-slate-800 hover:border-[#0F9D8F]/50 transition cursor-pointer group text-left shadow-xs"
+                  className="p-3.5 rounded-2xl bg-white hover:bg-teal-50/60 border border-gray-200/80 hover:border-[#0F9D8F]/60 transition cursor-pointer group text-left shadow-2xs hover:shadow-xs"
                 >
                   <div className="flex items-center gap-2.5 mb-1">
-                    <div className="p-1.5 rounded-xl bg-slate-800 group-hover:bg-slate-700 transition">
+                    <div className="p-1.5 rounded-xl bg-gray-50 group-hover:bg-teal-100/60 transition">
                       {item.icon}
                     </div>
-                    <span className="font-bold text-xs text-white group-hover:text-[#0F9D8F] transition">
+                    <span className="font-bold text-xs text-gray-900 group-hover:text-[#0F9D8F] transition">
                       {item.title}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 pl-9">{item.desc}</p>
+                  <p className="text-[11px] text-gray-500 pl-9 font-medium">{item.desc}</p>
                 </button>
               ))}
             </div>
 
-            <div className="p-3 rounded-2xl bg-slate-900/80 border border-slate-800 text-[11px] text-slate-400 flex items-center justify-center gap-2">
-              <Siren size={14} className="text-red-400" />
+            <div className="p-3 rounded-2xl bg-red-50/80 border border-red-100 text-[11px] text-red-900 flex items-center justify-center gap-2 font-medium">
+              <Siren size={14} className="text-[#DC2626]" />
               <span>In direct danger? Click <strong>← Trahi SOS</strong> or dial <strong>112</strong> immediately.</span>
             </div>
           </div>
@@ -322,7 +321,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                 >
                   {/* Assistant Avatar */}
                   {!isUser && (
-                    <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] text-white flex items-center justify-center shrink-0 mt-1 shadow-md shadow-[#0F9D8F]/30">
+                    <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] text-white flex items-center justify-center shrink-0 mt-1 shadow-md shadow-[#0F9D8F]/25">
                       <Sparkles size={16} />
                     </div>
                   )}
@@ -333,7 +332,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                       className={`p-4 rounded-3xl text-sm leading-relaxed ${
                         isUser
                           ? 'bg-[#0F9D8F] text-white font-medium rounded-tr-xs shadow-md shadow-[#0F9D8F]/20'
-                          : 'bg-slate-900 border border-slate-800 text-slate-100 rounded-tl-xs shadow-sm'
+                          : 'bg-white border border-gray-200/80 text-gray-800 rounded-tl-xs shadow-2xs'
                       }`}
                     >
                       {isUser ? (
@@ -345,7 +344,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
 
                     {/* Footer timestamp & copy action */}
                     <div
-                      className={`flex items-center gap-2 text-[10px] text-slate-400 mt-1 px-1 ${
+                      className={`flex items-center gap-2 text-[10px] text-gray-400 mt-1 px-1 font-medium ${
                         isUser ? 'justify-end' : 'justify-start'
                       }`}
                     >
@@ -358,13 +357,13 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                       {!isUser && (
                         <button
                           onClick={() => copyToClipboard(message.text, message.id)}
-                          className="opacity-0 group-hover:opacity-100 hover:text-white transition cursor-pointer flex items-center gap-1"
+                          className="opacity-0 group-hover:opacity-100 hover:text-gray-700 transition cursor-pointer flex items-center gap-1"
                           title="Copy Markdown Text"
                         >
                           {copiedId === message.id ? (
                             <>
-                              <Check size={11} className="text-emerald-400" />
-                              <span className="text-emerald-400 font-bold">Copied</span>
+                              <Check size={11} className="text-emerald-600" />
+                              <span className="text-emerald-600 font-bold">Copied</span>
                             </>
                           ) : (
                             <>
@@ -379,7 +378,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
 
                   {/* User Avatar */}
                   {isUser && (
-                    <div className="w-8 h-8 rounded-xl bg-slate-800 text-slate-300 flex items-center justify-center shrink-0 mt-1 border border-slate-700">
+                    <div className="w-8 h-8 rounded-xl bg-teal-50 text-[#0F9D8F] flex items-center justify-center shrink-0 mt-1 border border-teal-200/80 shadow-2xs">
                       <User size={16} />
                     </div>
                   )}
@@ -397,7 +396,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                 <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] text-white flex items-center justify-center shrink-0 shadow-md animate-pulse">
                   <Sparkles size={16} />
                 </div>
-                <div className="p-3.5 rounded-2xl bg-slate-900 border border-slate-800 text-slate-400 text-xs flex items-center gap-2">
+                <div className="p-3.5 rounded-2xl bg-white border border-gray-200/80 text-gray-600 text-xs flex items-center gap-2 shadow-2xs font-medium">
                   <Activity size={14} className="animate-spin text-[#0F9D8F]" />
                   <span>TrahiGPT Triage Engine analyzing query...</span>
                 </div>

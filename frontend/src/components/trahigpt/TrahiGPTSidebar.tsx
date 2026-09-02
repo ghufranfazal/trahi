@@ -7,7 +7,6 @@ import {
   X,
   User,
   Sparkles,
-  Siren,
   ChevronRight,
   ShieldCheck,
 } from 'lucide-react';
@@ -101,7 +100,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden"
+            className="fixed inset-0 z-40 bg-black/30 backdrop-blur-xs lg:hidden"
           />
 
           {/* Drawer Sidebar Container */}
@@ -113,29 +112,29 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            className="fixed top-0 left-0 bottom-0 z-50 w-72 sm:w-80 bg-slate-900 border-r border-slate-800 flex flex-col justify-between p-4 shadow-2xl text-slate-200 select-none h-full"
+            className="fixed top-0 left-0 bottom-0 z-50 w-72 sm:w-80 bg-white border-r border-gray-200/80 flex flex-col justify-between p-4 shadow-2xl text-gray-800 select-none h-full"
           >
             {/* Top Bar Header & Controls */}
             <div className="flex flex-col gap-3 flex-1 min-h-0">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-800">
+              <div className="flex items-center justify-between pb-2 border-b border-gray-100">
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] flex items-center justify-center text-white shadow-md shadow-[#0F9D8F]/30">
+                  <div className="w-8 h-8 rounded-xl bg-[#0F9D8F] flex items-center justify-center text-white shadow-md shadow-[#0F9D8F]/25">
                     <Sparkles size={18} />
                   </div>
                   <div>
-                    <h2 className="font-extrabold text-sm text-white flex items-center gap-1.5">
+                    <h2 className="font-extrabold text-sm text-gray-900 flex items-center gap-1.5">
                       <span>TrahiGPT</span>
-                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-900/60 text-red-300 border border-red-700/50">
+                      <span className="text-[10px] font-bold px-1.5 py-0.2 rounded-full bg-red-100 text-[#F0294D]">
                         AI Triage
                       </span>
                     </h2>
-                    <p className="text-[10px] text-slate-400">Emergency & First Aid Assistant</p>
+                    <p className="text-[10px] text-gray-400">Emergency & First Aid Assistant</p>
                   </div>
                 </div>
 
                 <button
                   onClick={onClose}
-                  className="w-7 h-7 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition cursor-pointer"
+                  className="w-7 h-7 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-500 hover:text-gray-900 flex items-center justify-center transition cursor-pointer"
                   title="Close Menu (or Swipe Left)"
                 >
                   <X size={16} />
@@ -156,18 +155,18 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
 
               {/* 2. Quick Search Input */}
               <div className="relative">
-                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
                 <input
                   type="text"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search recent conversations..."
-                  className="w-full py-2 pl-9 pr-3 rounded-xl bg-slate-800/80 text-white placeholder-slate-400 text-xs border border-slate-700/60 focus:outline-none focus:border-[#0F9D8F]"
+                  className="w-full py-2 pl-9 pr-3 rounded-xl bg-gray-50 text-gray-900 placeholder-gray-400 text-xs border border-gray-200 focus:outline-none focus:border-[#0F9D8F]"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs font-bold"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs font-bold"
                   >
                     ✕
                   </button>
@@ -175,18 +174,18 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
               </div>
 
               {/* 3. Recent Chats Chronological List */}
-              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin scrollbar-thumb-slate-800">
+              <div className="flex-1 overflow-y-auto space-y-4 pr-1 scrollbar-thin scrollbar-thumb-gray-200">
                 {filteredSessions.length === 0 ? (
-                  <div className="py-8 text-center text-slate-500 text-xs space-y-1">
-                    <MessageSquare size={24} className="mx-auto opacity-40 mb-2 text-slate-400" />
-                    <p className="font-semibold text-slate-400">No matching conversations found.</p>
+                  <div className="py-8 text-center text-gray-400 text-xs space-y-1">
+                    <MessageSquare size={24} className="mx-auto opacity-40 mb-2 text-gray-400" />
+                    <p className="font-semibold text-gray-600">No matching conversations found.</p>
                     <p className="text-[11px]">Start a new chat prompt anytime.</p>
                   </div>
                 ) : (
                   <>
                     {todaySessions.length > 0 && (
                       <div>
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 px-2">
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 px-2">
                           Today
                         </h4>
                         <div className="space-y-1">
@@ -195,8 +194,8 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                               key={session.id}
                               className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition text-xs ${
                                 activeSessionId === session.id
-                                  ? 'bg-slate-800 text-white border-l-3 border-[#0F9D8F] font-bold shadow-xs'
-                                  : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                                  ? 'bg-teal-50/80 text-[#0F9D8F] border-l-3 border-[#0F9D8F] font-bold shadow-2xs'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               }`}
                             >
                               <div
@@ -211,7 +210,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                   className={
                                     activeSessionId === session.id
                                       ? 'text-[#0F9D8F] shrink-0'
-                                      : 'text-slate-400 shrink-0'
+                                      : 'text-gray-400 shrink-0'
                                   }
                                 />
                                 <span className="truncate">{session.title}</span>
@@ -223,7 +222,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                   onDeleteSession(session.id);
                                 }}
                                 title="Delete Conversation"
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition cursor-pointer ml-1"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-600 transition cursor-pointer ml-1 text-gray-400"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -235,7 +234,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
 
                     {yesterdaySessions.length > 0 && (
                       <div>
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 px-2">
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 px-2">
                           Yesterday
                         </h4>
                         <div className="space-y-1">
@@ -244,8 +243,8 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                               key={session.id}
                               className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition text-xs ${
                                 activeSessionId === session.id
-                                  ? 'bg-slate-800 text-white border-l-3 border-[#0F9D8F] font-bold'
-                                  : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                                  ? 'bg-teal-50/80 text-[#0F9D8F] border-l-3 border-[#0F9D8F] font-bold shadow-2xs'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               }`}
                             >
                               <div
@@ -255,7 +254,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                 }}
                                 className="flex items-center gap-2.5 flex-1 min-w-0"
                               >
-                                <MessageSquare size={14} className="text-slate-400 shrink-0" />
+                                <MessageSquare size={14} className="text-gray-400 shrink-0" />
                                 <span className="truncate">{session.title}</span>
                               </div>
 
@@ -265,7 +264,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                   onDeleteSession(session.id);
                                 }}
                                 title="Delete Conversation"
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition cursor-pointer ml-1"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-600 transition cursor-pointer ml-1 text-gray-400"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -277,7 +276,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
 
                     {olderSessions.length > 0 && (
                       <div>
-                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 mb-1.5 px-2">
+                        <h4 className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400 mb-1.5 px-2">
                           Previous 7 Days
                         </h4>
                         <div className="space-y-1">
@@ -286,8 +285,8 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                               key={session.id}
                               className={`group flex items-center justify-between p-2.5 rounded-xl cursor-pointer transition text-xs ${
                                 activeSessionId === session.id
-                                  ? 'bg-slate-800 text-white border-l-3 border-[#0F9D8F] font-bold'
-                                  : 'text-slate-300 hover:bg-slate-800/60 hover:text-white'
+                                  ? 'bg-teal-50/80 text-[#0F9D8F] border-l-3 border-[#0F9D8F] font-bold shadow-2xs'
+                                  : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                               }`}
                             >
                               <div
@@ -297,7 +296,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                 }}
                                 className="flex items-center gap-2.5 flex-1 min-w-0"
                               >
-                                <MessageSquare size={14} className="text-slate-400 shrink-0" />
+                                <MessageSquare size={14} className="text-gray-400 shrink-0" />
                                 <span className="truncate">{session.title}</span>
                               </div>
 
@@ -307,7 +306,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                                   onDeleteSession(session.id);
                                 }}
                                 title="Delete Conversation"
-                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-400 transition cursor-pointer ml-1"
+                                className="opacity-0 group-hover:opacity-100 p-1 hover:text-red-600 transition cursor-pointer ml-1 text-gray-400"
                               >
                                 <Trash2 size={13} />
                               </button>
@@ -322,17 +321,17 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
             </div>
 
             {/* 4. Profile Footer (Fixed at bottom of drawer) */}
-            <div className="pt-3 border-t border-slate-800 shrink-0">
+            <div className="pt-3 border-t border-gray-100 shrink-0">
               <button
                 onClick={() => {
                   onOpenProfile();
                   onClose();
                 }}
-                className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-slate-800/90 hover:bg-slate-800 border border-slate-700/80 transition cursor-pointer text-left group"
+                className="w-full flex items-center justify-between p-2.5 rounded-2xl bg-gray-50 hover:bg-gray-100/80 border border-gray-200/80 transition cursor-pointer text-left group"
                 title="Click to open Profile Settings"
               >
                 <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="w-9 h-9 rounded-full border-2 border-[#0F9D8F] overflow-hidden bg-slate-700 shrink-0 flex items-center justify-center">
+                  <div className="w-9 h-9 rounded-full border-2 border-[#0F9D8F] overflow-hidden bg-white shrink-0 flex items-center justify-center shadow-2xs">
                     {avatarUrl ? (
                       <img
                         src={avatarUrl}
@@ -341,11 +340,11 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                         referrerPolicy="no-referrer"
                       />
                     ) : (
-                      <User size={18} className="text-slate-300" />
+                      <User size={18} className="text-gray-400" />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-white truncate">
+                    <p className="text-xs font-bold text-gray-900 truncate">
                       {userProfile?.name || 'Guest User'}
                     </p>
                     <p className="text-[10px] text-[#0F9D8F] font-semibold flex items-center gap-1 truncate">
@@ -355,7 +354,7 @@ export const TrahiGPTSidebar: React.FC<TrahiGPTSidebarProps> = ({
                   </div>
                 </div>
 
-                <div className="p-1 rounded-lg bg-slate-700 group-hover:bg-[#0F9D8F] group-hover:text-white text-slate-400 transition shrink-0">
+                <div className="p-1 rounded-lg bg-gray-200/80 group-hover:bg-[#0F9D8F] group-hover:text-white text-gray-500 transition shrink-0">
                   <ChevronRight size={14} />
                 </div>
               </button>
