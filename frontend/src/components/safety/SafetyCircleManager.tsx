@@ -28,6 +28,7 @@ import {
 import { SafetyCircleMember } from '../../types.ts';
 import { AddFamilyMemberModal } from './AddFamilyMemberModal.tsx';
 import { FamilySafetyPingWidget } from './FamilySafetyPingWidget.tsx';
+import { OfflineFamilySync } from './OfflineFamilySync.tsx';
 
 export const SafetyCircleManager: React.FC = () => {
   const { user, userProfile } = useAuth();
@@ -253,6 +254,12 @@ export const SafetyCircleManager: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* 4. Radar Scan & P2P Offline Mesh Sync Visualizer */}
+      <OfflineFamilySync 
+        currentUserId={user?.uid || 'user_123'} 
+        customFamilyMembers={myMembers} 
+      />
 
       {/* Add Family Member Modal */}
       <AddFamilyMemberModal
