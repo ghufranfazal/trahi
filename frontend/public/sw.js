@@ -1,11 +1,12 @@
-const CACHE_NAME = 'trahi-sos-cache-v1';
+const CACHE_NAME = 'trahi-sos-cache-v2';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
   '/manifest.json',
   '/pwa-192x192.png',
   '/pwa-512x512.png',
-  '/apple-touch-icon.png'
+  '/apple-touch-icon.png',
+  '/favicon.png'
 ];
 
 // 1. Install Event: Pre-cache shell assets
