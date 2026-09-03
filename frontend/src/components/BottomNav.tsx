@@ -11,6 +11,11 @@ export const BottomNav: React.FC<BottomNavProps> = ({
   activeTab = 'sos',
   onTabChange,
 }) => {
+  // Hide bottom tray completely when user is inside the TrahiGPT assistant portal
+  if (activeTab === 'trahigpt') {
+    return null;
+  }
+
   return (
     <nav 
       id="bottom-navigation-tray" 

@@ -23,6 +23,48 @@ function getGenAI(): GoogleGenAI | null {
   return genAIClient;
 }
 
+// Resilient Gemini invocation with automatic model cascading on 503 high-demand / 429 rate limit
+async function generateContentWithFallback(
+  ai: GoogleGenAI,
+  params: {
+    systemInstruction?: string;
+    temperature?: number;
+    contents: any;
+    preferredModels?: string[];
+  }
+): Promise<{ text: string; model: string }> {
+  const modelsToTry = params.preferredModels && params.preferredModels.length > 0
+    ? params.preferredModels
+    : ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"];
+
+  let lastError: any = null;
+  for (const model of modelsToTry) {
+    try {
+      const config: any = {};
+      if (params.systemInstruction) config.systemInstruction = params.systemInstruction;
+      if (params.temperature !== undefined) config.temperature = params.temperature;
+
+      const response = await ai.models.generateContent({
+        model,
+        config: Object.keys(config).length > 0 ? config : undefined,
+        contents: params.contents,
+      });
+
+      const text = response.text || "";
+      return { text, model };
+    } catch (err: any) {
+      lastError = err;
+      const errMsg = err?.message || JSON.stringify(err);
+      console.warn(`Model ${model} attempt yielded (${errMsg.slice(0, 100)}...). Testing next fallback model...`);
+      // Brief pause before trying fallback model if 503 or 429
+      if (errMsg.includes("503") || errMsg.includes("high demand") || errMsg.includes("429") || errMsg.includes("UNAVAILABLE")) {
+        await new Promise((resolve) => setTimeout(resolve, 250));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // Configure Cloudinary if environment variables are provided
 const isCloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -132,8 +174,7 @@ app.post("/api/classify-sos", async (req, res) => {
         const rawBase64 = audioBase64.includes(",") ? audioBase64.split(",")[1] : audioBase64;
         const cleanMime = mimeType.split(";")[0] || "audio/webm";
 
-        const transcribeResponse = await ai.models.generateContent({
-          model: "gemini-3.7-flash",
+        const transcribeResponse = await generateContentWithFallback(ai, {
           contents: [
             {
               role: "user",
@@ -150,6 +191,7 @@ app.post("/api/classify-sos", async (req, res) => {
               ],
             },
           ],
+          preferredModels: ["gemini-3.5-transcribe", "gemini-3.8-flash", "gemini-flash-latest"],
         });
 
         finalTranscript = (transcribeResponse.text || "").trim();
@@ -178,13 +220,10 @@ app.post("/api/classify-sos", async (req, res) => {
 
     if (ai) {
       try {
-        const classificationResponse = await ai.models.generateContent({
-          model: "gemini-3.7-flash",
-          config: {
-            systemInstruction:
-              "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else.",
-            temperature: 0.1,
-          },
+        const classificationResponse = await generateContentWithFallback(ai, {
+          systemInstruction:
+            "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else.",
+          temperature: 0.1,
           contents: [
             {
               role: "user",
@@ -195,6 +234,7 @@ app.post("/api/classify-sos", async (req, res) => {
               ],
             },
           ],
+          preferredModels: ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"],
         });
 
         const rawCategory = (classificationResponse.text || "").trim();
@@ -296,20 +336,18 @@ Keep guidance clear, high-contrast readable, precise, and actionable in low-time
           parts: [{ text: prompt }],
         });
 
-        const response = await ai.models.generateContent({
-          model: "gemini-3.7-flash",
-          config: {
-            systemInstruction,
-            temperature: 0.3,
-          },
+        const response = await generateContentWithFallback(ai, {
+          systemInstruction,
+          temperature: 0.3,
           contents,
+          preferredModels: ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"],
         });
 
         const replyText = response.text || "Emergency system active. Please specify your situation.";
         return res.json({
           success: true,
           reply: replyText,
-          provider: "gemini-3.7-flash",
+          provider: response.model,
         });
       } catch (geminiErr: any) {
         console.warn("Gemini TrahiGPT Chat API call failed, falling back to local protocol engine:", geminiErr?.message || geminiErr);

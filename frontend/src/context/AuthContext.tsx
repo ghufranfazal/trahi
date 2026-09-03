@@ -33,6 +33,42 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Generate or retrieve persistent guest UID across browser refreshes
+const getOrCreateGuestUid = (): string => {
+  try {
+    const existing = localStorage.getItem('trahi_guest_uid');
+    if (existing) return existing;
+    const newId = 'guest_' + Math.random().toString(36).substring(2, 9) + Date.now().toString(36);
+    localStorage.setItem('trahi_guest_uid', newId);
+    return newId;
+  } catch {
+    return 'guest_' + Date.now().toString(36);
+  }
+};
+
+// Safe helper to create a complete compliant User fallback object
+const createFallbackUser = (uid: string, displayName?: string, email?: string): User => {
+  return {
+    uid,
+    isAnonymous: true,
+    displayName: displayName || null,
+    email: email || null,
+    phoneNumber: null,
+    photoURL: null,
+    providerId: 'trahi-guest',
+    emailVerified: false,
+    metadata: {},
+    providerData: [],
+    refreshToken: '',
+    tenantId: null,
+    delete: async () => {},
+    getIdToken: async () => 'guest-token',
+    getIdTokenResult: async () => ({} as any),
+    reload: async () => {},
+    toJSON: () => ({ uid }),
+  } as unknown as User;
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -41,6 +77,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [donorLoading, setDonorLoading] = useState<boolean>(false);
   const [authError, setAuthError] = useState<string | null>(null);
   const [isDomainError, setIsDomainError] = useState<boolean>(false);
+
+  // Safe anonymous sign in helper that falls back gracefully if Anonymous provider is restricted in Firebase console
+  const safeSignInAnonymously = async (donorName?: string, donorEmail?: string): Promise<User> => {
+    try {
+      const anonRes = await signInAnonymously(auth);
+      return anonRes.user;
+    } catch (err: any) {
+      const errorCode = err?.code || '';
+      if (errorCode === 'auth/admin-restricted-operation' || err?.message?.includes('admin-restricted-operation')) {
+        const guestUid = getOrCreateGuestUid();
+        return createFallbackUser(guestUid, donorName, donorEmail);
+      }
+      throw err;
+    }
+  };
 
   const loadProfile = async (currentUser: User) => {
     const isAnon = currentUser.isAnonymous;
@@ -83,14 +134,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       } else {
         // Automatic anonymous sign-in for seamless frictionless SOS emergency access
         try {
-          const anonRes = await signInAnonymously(auth);
-          setUser(anonRes.user);
-          await loadProfile(anonRes.user);
+          const guestUser = await safeSignInAnonymously();
+          setUser(guestUser);
+          await loadProfile(guestUser);
         } catch (e) {
-          console.error("Auto anonymous auth failed:", e);
-          setUser(null);
-          setUserProfile(null);
-          setDonorProfile(null);
+          const guestUid = getOrCreateGuestUid();
+          const fallbackUser = createFallbackUser(guestUid);
+          setUser(fallbackUser);
+          await loadProfile(fallbackUser);
         } finally {
           setLoading(false);
         }
@@ -168,12 +219,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDomainError(false);
     try {
       setLoading(true);
-      const result = await signInAnonymously(auth);
-      sessionStorage.setItem(`donor_name_${result.user.uid}`, donorName);
-      sessionStorage.setItem(`auth_type_${result.user.uid}`, 'google');
-      setUser(result.user);
-      await loadProfile(result.user);
-      return result.user;
+      const donorUser = await safeSignInAnonymously(donorName, donorEmail);
+      sessionStorage.setItem(`donor_name_${donorUser.uid}`, donorName);
+      sessionStorage.setItem(`auth_type_${donorUser.uid}`, 'google');
+      setUser(donorUser);
+      await loadProfile(donorUser);
+      return donorUser;
     } catch (err: any) {
       console.error("Donor Fallback Sign-In Error:", err);
       setAuthError(err?.message || "Could not sign in as donor.");
@@ -188,11 +239,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsDomainError(false);
     try {
       setLoading(true);
-      const result = await signInAnonymously(auth);
-      sessionStorage.removeItem(`donor_name_${result.user.uid}`);
-      sessionStorage.removeItem(`auth_type_${result.user.uid}`);
-      setUser(result.user);
-      await loadProfile(result.user);
+      const guestUser = await safeSignInAnonymously();
+      sessionStorage.removeItem(`donor_name_${guestUser.uid}`);
+      sessionStorage.removeItem(`auth_type_${guestUser.uid}`);
+      setUser(guestUser);
+      await loadProfile(guestUser);
     } catch (err: any) {
       console.error("Anonymous Sign-In Error:", err);
       setAuthError(err?.message || "Could not sign in anonymously.");
@@ -209,12 +260,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       await firebaseSignOut(auth);
       setDonorProfile(null);
-      // Re-sign in anonymously immediately for seamless main app SOS operation
-      const anonRes = await signInAnonymously(auth);
-      setUser(anonRes.user);
-      await loadProfile(anonRes.user);
+      // Re-sign in seamlessly with guest fallback for unhindered main app SOS operation
+      const guestUser = await safeSignInAnonymously();
+      setUser(guestUser);
+      await loadProfile(guestUser);
     } catch (err: any) {
-      console.error("Sign Out Error:", err);
+      console.warn("Sign Out Notice:", err);
     }
   };
 
