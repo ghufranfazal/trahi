@@ -451,4 +451,9 @@ async function setupServer() {
   });
 }
 
-setupServer();
+if (!process.env.VERCEL) {
+  setupServer();
+}
+
+export default app;
+
