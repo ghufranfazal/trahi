@@ -1,9 +1,42 @@
+export interface TrahiGPTStep {
+  stepNumber: number;
+  title: string;
+  description: string;
+  icon?: string;
+}
+
+export interface TrahiGPTContact {
+  name: string;
+  number: string;
+  category?: string;
+}
+
+export interface TrahiGPTStat {
+  label: string;
+  value: string;
+  subtext?: string;
+}
+
+export interface TrahiGPTStructuredResponse {
+  title?: string;
+  summary?: string;
+  urgency?: 'critical' | 'high' | 'moderate' | 'info';
+  steps?: TrahiGPTStep[];
+  contacts?: TrahiGPTContact[];
+  stats?: TrahiGPTStat[];
+  warnings?: string[];
+  notes?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: number;
   category?: string;
+  structuredData?: TrahiGPTStructuredResponse;
+  errorType?: 'CONFIG_MISSING' | 'RATE_LIMIT' | 'GENERAL_ERROR';
+  retryPrompt?: string;
 }
 
 export interface ChatSession {
@@ -12,6 +45,13 @@ export interface ChatSession {
   messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
+}
+
+export interface TrahiGPTResponseResult {
+  text: string;
+  structuredData?: TrahiGPTStructuredResponse;
+  errorType?: 'CONFIG_MISSING' | 'RATE_LIMIT' | 'GENERAL_ERROR';
+  retryPrompt?: string;
 }
 
 const STORAGE_KEY = 'trahigpt_sessions_v1';
@@ -30,11 +70,11 @@ export function getInitialSessions(): ChatSession[] {
     console.warn('Failed to load TrahiGPT sessions from localStorage:', e);
   }
 
-  // Fallback initial sample sessions
+  // Sample initial sessions with structured visual data
   const sampleSessions: ChatSession[] = [
     {
       id: 'session-cpr-guide',
-      title: 'CPR & Cardiac Arrest Guide',
+      title: 'CPR & Cardiac Response Guide',
       createdAt: Date.now() - 3600000 * 2,
       updatedAt: Date.now() - 3600000 * 2,
       messages: [
@@ -47,48 +87,52 @@ export function getInitialSessions(): ChatSession[] {
         {
           id: 'msg-2',
           sender: 'assistant',
-          text: `### 🩺 Emergency CPR & Cardiac Response Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **112** or **108** for an emergency ambulance before starting CPR.
-
-#### **Step-by-Step Hands-Only CPR:**
-1. **Position the Victim**: Place the person flat on their back on a firm surface.
-2. **Hand Placement**: Place the heel of one hand in the center of their chest. Lock second hand over the first with fingers interlaced.
-3. **Chest Compressions**: Push hard and fast at a rate of **100 to 120 compressions per minute**.
-4. **Depth**: Allow the chest to recoil completely between compressions (approx 2 inches or 5 cm deep).
-5. **Continue**: Do not stop until professional paramedic assistance arrives or an AED is available.`,
+          text: 'Emergency CPR & Cardiac Response Protocol',
           timestamp: Date.now() - 3600000 * 2 + 1000,
-        },
-      ],
-    },
-    {
-      id: 'session-snakebite-triage',
-      title: 'Snakebite Emergency Triage',
-      createdAt: Date.now() - 86400000 * 1,
-      updatedAt: Date.now() - 86400000 * 1,
-      messages: [
-        {
-          id: 'msg-3',
-          sender: 'user',
-          text: 'What is the immediate first aid for a snake bite in India?',
-          timestamp: Date.now() - 86400000 * 1,
-        },
-        {
-          id: 'msg-4',
-          sender: 'assistant',
-          text: `### 🐍 Snakebite Emergency Triage (India Protocol)
-
-> 🚨 **EMERGENCY WARNING**: Treat all snakebites in India as potentially venomous (Cobra, Viper, Krait). Call **108** immediately.
-
-#### **Life-Saving Action Plan:**
-1. **Stay Calm & Immobilize**: Keep victim still. Keep bitten limb **below heart level**.
-2. **Remove Jewelry/Tight Items**: Remove rings, anklets, and shoes before swelling starts.
-3. **Clean Lightly**: Wipe wound gently with clean water. Cover loosely with sterile cloth.
-
-> ⚠️ **DO NOT**:
-> - **DO NOT** cut wound or suck out venom.
-> - **DO NOT** apply tight tourniquets or ice.`,
-          timestamp: Date.now() - 86400000 * 1 + 1000,
+          structuredData: {
+            title: 'Emergency CPR & Cardiac Response Protocol',
+            summary: 'Immediate hands-only CPR keeps oxygen flowing to brain and vital organs until professional paramedics arrive.',
+            urgency: 'critical',
+            steps: [
+              {
+                stepNumber: 1,
+                title: 'Position the Victim',
+                description: 'Place the victim flat on their back on a firm, hard surface.',
+                icon: 'user',
+              },
+              {
+                stepNumber: 2,
+                title: 'Hand Placement',
+                description: 'Place the heel of one hand in the center of their chest. Lock second hand over the first with fingers interlaced.',
+                icon: 'activity',
+              },
+              {
+                stepNumber: 3,
+                title: 'Chest Compressions',
+                description: 'Push hard and fast at a rate of 100 to 120 compressions per minute.',
+                icon: 'heart',
+              },
+              {
+                stepNumber: 4,
+                title: 'Compression Depth',
+                description: 'Compress 2 inches (5 cm) deep and allow full chest recoil between compressions.',
+                icon: 'check',
+              },
+            ],
+            contacts: [
+              { name: 'National Emergency', number: '112', category: 'All-in-One' },
+              { name: 'Ambulance & Paramedic', number: '108', category: 'Medical' },
+            ],
+            stats: [
+              { label: 'Compression Rate', value: '100-120 / min', subtext: "Rhythm of 'Stayin' Alive'" },
+              { label: 'Compression Depth', value: '2 inches (5 cm)', subtext: 'Allow complete recoil' },
+            ],
+            warnings: [
+              'Do not interrupt compressions for more than 10 seconds.',
+              'Do not compress on soft mattresses or pillows.',
+            ],
+            notes: 'If an Automated External Defibrillator (AED) is available, turn it on immediately and follow its voice instructions.',
+          },
         },
       ],
     },
@@ -114,7 +158,7 @@ export function saveSessionsToStorage(sessions: ChatSession[]): void {
 export async function sendTrahiGPTMessage(
   prompt: string,
   history: ChatMessage[] = []
-): Promise<string> {
+): Promise<TrahiGPTResponseResult> {
   try {
     const res = await fetch('/api/trahigpt-chat', {
       method: 'POST',
@@ -124,43 +168,78 @@ export async function sendTrahiGPTMessage(
       body: JSON.stringify({ prompt, history }),
     });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+    const data = await res.json().catch(() => null);
+
+    if (!res.ok || !data || data.success === false) {
+      const errorType = data?.errorType || (res.status === 429 ? 'RATE_LIMIT' : res.status === 503 ? 'CONFIG_MISSING' : 'GENERAL_ERROR');
+      console.error(`TrahiGPT API Error [HTTP ${res.status}] [Type: ${errorType}]:`, data || res.statusText);
+
+      if (errorType === 'CONFIG_MISSING') {
+        return {
+          text: 'TrahiGPT is currently unavailable — the AI service is not configured. Please contact support.',
+          errorType: 'CONFIG_MISSING',
+        };
+      }
+
+      if (errorType === 'RATE_LIMIT') {
+        return {
+          text: 'TrahiGPT is experiencing high demand right now. Please try again in a moment, or use the Emergency Contacts list below for immediate help.',
+          errorType: 'RATE_LIMIT',
+        };
+      }
+
+      return {
+        text: 'Something went wrong reaching TrahiGPT. Please check your connection and try again.',
+        errorType: 'GENERAL_ERROR',
+        retryPrompt: prompt,
+      };
     }
 
-    const data = await res.json();
-    return data.reply || 'Emergency response generated.';
+    // Process raw response text into structured data
+    const rawReply = data.reply || '';
+    let parsedData: TrahiGPTStructuredResponse | undefined = undefined;
+
+    try {
+      // Strip markdown json wrapper if present
+      let cleanJson = rawReply.trim();
+      if (cleanJson.startsWith('```json')) {
+        cleanJson = cleanJson.replace(/^```json\s*/, '').replace(/\s*```$/, '');
+      } else if (cleanJson.startsWith('```')) {
+        cleanJson = cleanJson.replace(/^```\s*/, '').replace(/\s*```$/, '');
+      }
+
+      const parsed = JSON.parse(cleanJson);
+      if (typeof parsed === 'object' && parsed !== null) {
+        parsedData = {
+          title: parsed.title,
+          summary: parsed.summary,
+          urgency: parsed.urgency || 'info',
+          steps: Array.isArray(parsed.steps) ? parsed.steps : [],
+          contacts: Array.isArray(parsed.contacts) ? parsed.contacts : [],
+          stats: Array.isArray(parsed.stats) ? parsed.stats : [],
+          warnings: Array.isArray(parsed.warnings) ? parsed.warnings : [],
+          notes: parsed.notes,
+        };
+      }
+    } catch (e) {
+      console.warn('Failed to parse Gemini JSON output, falling back to text presentation:', e);
+      parsedData = {
+        title: 'Emergency Guidance',
+        summary: rawReply,
+      };
+    }
+
+    return {
+      text: rawReply,
+      structuredData: parsedData,
+    };
   } catch (err: any) {
-    console.warn('TrahiGPT API call failed, using client fallback:', err);
-    // Client offline fallback
-    const q = prompt.toLowerCase();
-    if (q.includes('cpr') || q.includes('heart') || q.includes('cardiac')) {
-      return `### 🩺 Emergency CPR & Cardiac Response Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **112** or **108** for an emergency ambulance before starting CPR.
-
-#### **Step-by-Step Hands-Only CPR:**
-1. **Position the Victim**: Place the person flat on their back on a firm surface.
-2. **Hand Placement**: Place the heel of one hand in the center of their chest. Lock second hand over the first with fingers interlaced.
-3. **Chest Compressions**: Push hard and fast at **100-120 compressions per minute**.
-4. **Depth**: Compress 2 inches (5 cm) deep and let chest recoil completely.`;
-    }
-    if (q.includes('burn') || q.includes('fire')) {
-      return `### 🔥 Severe Burn & Scald First-Aid Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **101** (Fire) and **108** (Ambulance).
-
-#### **Immediate First-Aid Steps:**
-1. **Cool the Burn**: Run cool tap water over burn for **10 to 20 minutes**.
-2. **Protect the Area**: Cover loosely with clean cloth or wrap.
-3. **Remove Constriction**: Remove rings and tight items before swelling starts.`;
-    }
-    return `### 🛡️ Trahi First-Aid Emergency Guidance
-
-> 📞 **Emergency Hotlines**: **112** (National Emergency), **108** (Ambulance), **101** (Fire), **100** (Police).
-
-1. **Keep Victim Calm & Safe**: Move away from immediate danger.
-2. **Check Airway & Breathing**: Ensure clear airway and uninhibited chest movements.
-3. **Apply Direct Pressure**: For bleeding wounds, press clean gauze or cloth firmly with both hands.`;
+    console.error('TrahiGPT fetch exception:', err);
+    return {
+      text: 'Something went wrong reaching TrahiGPT. Please check your connection and try again.',
+      errorType: 'GENERAL_ERROR',
+      retryPrompt: prompt,
+    };
   }
 }
+
