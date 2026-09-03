@@ -84,7 +84,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 }
 
 // Health check endpoint
-app.get("/api/health", (req, res) => {
+app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
     hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
@@ -93,7 +93,7 @@ app.get("/api/health", (req, res) => {
 });
 
 // Audio Upload Endpoint (Cloudinary with graceful fallback)
-app.post("/api/upload-audio", async (req, res) => {
+app.post(["/api/upload-audio", "/upload-audio"], async (req, res) => {
   try {
     const { audioData, mimeType = "audio/webm", fileName } = req.body;
 
@@ -162,7 +162,7 @@ app.post("/api/upload-audio", async (req, res) => {
 });
 
 // Gemini Emergency Classification & Transcription Endpoint
-app.post("/api/classify-sos", async (req, res) => {
+app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
   try {
     const { transcript, audioBase64, mimeType = "audio/webm" } = req.body;
 
@@ -307,7 +307,7 @@ app.post("/api/classify-sos", async (req, res) => {
 
 
 // TrahiGPT First-Aid & Emergency Response Chat Endpoint
-app.post("/api/trahigpt-chat", async (req, res) => {
+app.post(["/api/trahigpt-chat", "/trahigpt-chat"], async (req, res) => {
   try {
     const { prompt, history = [] } = req.body;
 
