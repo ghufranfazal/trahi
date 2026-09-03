@@ -261,11 +261,13 @@ function MainApp() {
           />
         )}
 
-        {/* Mobile Bottom Navigation Tray (hidden on tablet/PC) */}
-        <BottomNav 
-          activeTab={activeTab} 
-          onTabChange={handleTabSelect} 
-        />
+        {/* Mobile Bottom Navigation Tray (hidden on tablet/PC and when in TrahiGPT) */}
+        {activeTab !== 'trahigpt' && (
+          <BottomNav 
+            activeTab={activeTab} 
+            onTabChange={handleTabSelect} 
+          />
+        )}
 
         {/* Global Network Dispatch Modals */}
         <SMSDispatchModal />
