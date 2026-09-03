@@ -1,8 +1,21 @@
-import React, { useState } from 'react';
-import { Info, X, PhoneCall, ShieldAlert, LogOut, User } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { 
+  Info, 
+  X, 
+  PhoneCall, 
+  ShieldAlert, 
+  LogOut, 
+  MoreVertical, 
+  Download, 
+  CheckCircle2, 
+  Smartphone, 
+  Share2, 
+  Sparkles 
+} from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext.tsx';
 import { NetworkStatusIndicator } from './network/NetworkStatusIndicator.tsx';
+import { usePWAInstall } from '../hooks/usePWAInstall.ts';
 
 interface HeaderProps {
   onOpenProfile?: () => void;
@@ -10,13 +23,37 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
   const [showInfo, setShowInfo] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
+  const [showPWAInstructions, setShowPWAInstructions] = useState(false);
   const { userProfile, signOut } = useAuth();
+  const { isInstallable, isInstalled, installApp } = usePWAInstall();
+
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  // Close three-dot menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const handleInstallClick = async () => {
+    setShowMenu(false);
+    const result = await installApp();
+    if (result === 'instructions') {
+      setShowPWAInstructions(true);
+    }
+  };
 
   const avatarUrl = userProfile?.profilePictureUrl || (userProfile?.userId ? `https://api.dicebear.com/9.x/avataaars/svg?seed=${userProfile.userId}` : null);
 
   return (
     <>
-      <header id="main-header" className="w-full flex items-center justify-between px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 pb-3 gap-2">
+      <header id="main-header" className="w-full flex items-center justify-between px-4 sm:px-6 md:px-8 pt-4 sm:pt-5 pb-3 gap-2 relative">
         {/* Left: Red exclamation badge + Emergency call title */}
         <div className="flex items-center gap-2.5 shrink-0">
           <div 
@@ -39,6 +76,7 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
         <div className="flex items-center gap-2 sm:gap-3">
           {/* Multi-State Network Indicator & Toggle */}
           <NetworkStatusIndicator />
+
           {/* Active User Badge on mobile */}
           {userProfile && (
             <div className="md:hidden flex items-center gap-1.5 px-2 py-1 bg-white rounded-full border border-gray-200 shadow-2xs">
@@ -88,6 +126,103 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
           >
             <Info size={16} className="text-gray-400 sm:w-4.5 sm:h-4.5" />
           </button>
+
+          {/* Three-Dot Options Menu Button */}
+          <div className="relative" ref={menuRef}>
+            <button
+              id="header-three-dot-menu"
+              onClick={() => setShowMenu((prev) => !prev)}
+              className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center shadow-xs hover:shadow-md active:scale-95 transition-all cursor-pointer border border-gray-200/80 ${
+                showMenu ? 'bg-[#0F9D8F] text-white border-[#0F9D8F]' : 'bg-white text-gray-600 hover:text-gray-900'
+              }`}
+              aria-label="Options and Install Menu"
+              title="Options Menu"
+            >
+              <MoreVertical size={18} />
+            </button>
+
+            {/* Dropdown Popover */}
+            <AnimatePresence>
+              {showMenu && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                  className="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-200/90 py-2 z-50 overflow-hidden font-sans"
+                >
+                  <div className="px-3 py-1.5 border-b border-gray-100 mb-1">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-gray-400">
+                      Trahi System Options
+                    </span>
+                  </div>
+
+                  {/* 1. Install App Option */}
+                  <button
+                    id="menu-option-install-pwa"
+                    onClick={handleInstallClick}
+                    className="w-full px-3.5 py-2.5 flex items-center justify-between text-left hover:bg-teal-50/70 transition cursor-pointer text-xs font-bold text-gray-800 group"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-7 h-7 rounded-xl bg-teal-100/70 text-[#0F9D8F] flex items-center justify-center group-hover:bg-[#0F9D8F] group-hover:text-white transition">
+                        {isInstalled ? <CheckCircle2 size={16} /> : <Download size={16} />}
+                      </div>
+                      <div>
+                        <div className="text-gray-900 font-extrabold">
+                          {isInstalled ? 'App Installed' : 'Install App'}
+                        </div>
+                        <div className="text-[10px] text-gray-400 font-medium">
+                          {isInstalled ? 'Running Standalone PWA' : 'Save Trahi to Home Screen'}
+                        </div>
+                      </div>
+                    </div>
+                    {isInstalled ? (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">
+                        Installed
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-teal-100 text-[#0F9D8F]">
+                        PWA
+                      </span>
+                    )}
+                  </button>
+
+                  {/* 2. National Helplines Option */}
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowInfo(true);
+                    }}
+                    className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left hover:bg-gray-50 transition cursor-pointer text-xs font-bold text-gray-800"
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-red-50 text-[#F0294D] flex items-center justify-center">
+                      <ShieldAlert size={16} />
+                    </div>
+                    <div>
+                      <div className="text-gray-900 font-bold">National Helplines</div>
+                      <div className="text-[10px] text-gray-400 font-medium">112, 108, 101, 100</div>
+                    </div>
+                  </button>
+
+                  {/* 3. About / Emergency Network */}
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      setShowInfo(true);
+                    }}
+                    className="w-full px-3.5 py-2.5 flex items-center gap-2.5 text-left hover:bg-gray-50 transition cursor-pointer text-xs font-bold text-gray-800"
+                  >
+                    <div className="w-7 h-7 rounded-xl bg-gray-100 text-gray-600 flex items-center justify-center">
+                      <Sparkles size={16} />
+                    </div>
+                    <div>
+                      <div className="text-gray-900 font-bold">About Trahi Emergency</div>
+                      <div className="text-[10px] text-gray-400 font-medium">v1.2.0 • Offline Ready</div>
+                    </div>
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </div>
       </header>
 
@@ -160,6 +295,73 @@ export const Header: React.FC<HeaderProps> = ({ onOpenProfile }) => {
                 className="mt-5 w-full py-3 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-semibold rounded-xl text-sm sm:text-base transition shadow-sm cursor-pointer"
               >
                 Understood
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* PWA Manual Installation Guide Modal */}
+      <AnimatePresence>
+        {showPWAInstructions && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 10 }}
+              className="bg-white rounded-3xl max-w-sm sm:max-w-md w-full p-6 shadow-xl border border-gray-100 space-y-4 font-sans"
+            >
+              <div className="flex items-center justify-between pb-3 border-b border-gray-100">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-2xl bg-teal-50 text-[#0F9D8F] flex items-center justify-center">
+                    <Smartphone size={20} />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-base text-gray-900">Install Trahi App</h3>
+                    <p className="text-[11px] text-gray-400 font-medium">Progressive Web Application</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowPWAInstructions(false)}
+                  className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-600 transition cursor-pointer"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+
+              <div className="space-y-3 text-xs text-gray-600 font-medium leading-relaxed">
+                <p>
+                  To install Trahi as a standalone emergency app on your phone or desktop:
+                </p>
+
+                {/* Chrome / Android Guide */}
+                <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-gray-900 text-xs">
+                    <MoreVertical size={14} className="text-[#0F9D8F]" />
+                    <span>Android / Chrome / Edge</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 pl-5">
+                    Tap the browser menu button (<strong>⋮</strong> three dots) and select <strong>"Install app"</strong> or <strong>"Add to Home screen"</strong>.
+                  </p>
+                </div>
+
+                {/* iOS Safari Guide */}
+                <div className="p-3 rounded-2xl bg-gray-50 border border-gray-200/80 space-y-1.5">
+                  <div className="flex items-center gap-2 font-bold text-gray-900 text-xs">
+                    <Share2 size={14} className="text-blue-500" />
+                    <span>iPhone / iPad (Safari)</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 pl-5">
+                    Tap the <strong>Share button (⎋)</strong> at the bottom of Safari and choose <strong>"Add to Home Screen"</strong> (+).
+                  </p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setShowPWAInstructions(false)}
+                className="w-full py-3 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-extrabold text-xs sm:text-sm rounded-2xl shadow-md transition cursor-pointer"
+              >
+                Got It
               </button>
             </motion.div>
           </div>

@@ -1,0 +1,32 @@
+{
+  "name": "Trahi — Emergency Disaster Response",
+  "short_name": "Trahi SOS",
+  "description": "Dual-sided emergency disaster response and donor relief ecosystem for India",
+  "start_url": "/",
+  "id": "/",
+  "display": "standalone",
+  "background_color": "#F7F7F8",
+  "theme_color": "#0F9D8F",
+  "orientation": "portrait-primary",
+  "scope": "/",
+  "categories": ["emergency", "medical", "utilities", "safety"],
+  "icons": [
+    {
+      "src": "/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
