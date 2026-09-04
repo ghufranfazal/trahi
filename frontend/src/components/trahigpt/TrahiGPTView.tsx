@@ -164,8 +164,26 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
             : s
         )
       );
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending TrahiGPT message:', error);
+      const errorMessage: ChatMessage = {
+        id: `err-msg-${Date.now()}`,
+        sender: 'assistant',
+        text: `> ⚠️ **Gemini AI Service Error**: ${error?.message || 'Failed to generate response. Please ensure GEMINI_API_KEY is configured in backend .env.'}`,
+        timestamp: Date.now(),
+      };
+
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === currentSessionId
+            ? {
+                ...s,
+                messages: [...s.messages, errorMessage],
+                updatedAt: Date.now(),
+              }
+            : s
+        )
+      );
     } finally {
       setIsLoading(false);
     }

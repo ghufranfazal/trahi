@@ -115,52 +115,23 @@ export async function sendTrahiGPTMessage(
   prompt: string,
   history: ChatMessage[] = []
 ): Promise<string> {
-  try {
-    const res = await fetch('/api/trahigpt-chat', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ prompt, history }),
-    });
+  const res = await fetch('/api/trahigpt/chat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ prompt, history }),
+  });
 
-    if (!res.ok) {
-      throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-    }
+  const data = await res.json().catch(() => ({}));
 
-    const data = await res.json();
-    return data.reply || 'Emergency response generated.';
-  } catch (err: any) {
-    console.warn('TrahiGPT API call failed, using client fallback:', err);
-    // Client offline fallback
-    const q = prompt.toLowerCase();
-    if (q.includes('cpr') || q.includes('heart') || q.includes('cardiac')) {
-      return `### 🩺 Emergency CPR & Cardiac Response Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **112** or **108** for an emergency ambulance before starting CPR.
-
-#### **Step-by-Step Hands-Only CPR:**
-1. **Position the Victim**: Place the person flat on their back on a firm surface.
-2. **Hand Placement**: Place the heel of one hand in the center of their chest. Lock second hand over the first with fingers interlaced.
-3. **Chest Compressions**: Push hard and fast at **100-120 compressions per minute**.
-4. **Depth**: Compress 2 inches (5 cm) deep and let chest recoil completely.`;
-    }
-    if (q.includes('burn') || q.includes('fire')) {
-      return `### 🔥 Severe Burn & Scald First-Aid Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **101** (Fire) and **108** (Ambulance).
-
-#### **Immediate First-Aid Steps:**
-1. **Cool the Burn**: Run cool tap water over burn for **10 to 20 minutes**.
-2. **Protect the Area**: Cover loosely with clean cloth or wrap.
-3. **Remove Constriction**: Remove rings and tight items before swelling starts.`;
-    }
-    return `### 🛡️ Trahi First-Aid Emergency Guidance
-
-> 📞 **Emergency Hotlines**: **112** (National Emergency), **108** (Ambulance), **101** (Fire), **100** (Police).
-
-1. **Keep Victim Calm & Safe**: Move away from immediate danger.
-2. **Check Airway & Breathing**: Ensure clear airway and uninhibited chest movements.
-3. **Apply Direct Pressure**: For bleeding wounds, press clean gauze or cloth firmly with both hands.`;
+  if (!res.ok || data.success === false) {
+    throw new Error(data.error || `Server returned status ${res.status}: ${res.statusText}`);
   }
+
+  if (!data.reply) {
+    throw new Error('No dynamic response returned from Gemini API.');
+  }
+
+  return data.reply;
 }
