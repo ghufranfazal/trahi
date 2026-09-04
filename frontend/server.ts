@@ -24,50 +24,6 @@ function getGenAI(): GoogleGenAI | null {
   return genAIClient;
 }
 
-// Resilient Gemini invocation with automatic model cascading on 503 high-demand / 429 rate limit
-async function generateContentWithFallback(
-  ai: GoogleGenAI,
-  params: {
-    systemInstruction?: string;
-    temperature?: number;
-    responseMimeType?: string;
-    contents: any;
-    preferredModels?: string[];
-  }
-): Promise<{ text: string; model: string }> {
-  const modelsToTry = params.preferredModels && params.preferredModels.length > 0
-    ? params.preferredModels
-    : ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.8-flash"];
-
-  let lastError: any = null;
-  for (const model of modelsToTry) {
-    try {
-      const config: any = {};
-      if (params.systemInstruction) config.systemInstruction = params.systemInstruction;
-      if (params.temperature !== undefined) config.temperature = params.temperature;
-      if (params.responseMimeType) config.responseMimeType = params.responseMimeType;
-
-      const response = await ai.models.generateContent({
-        model,
-        config: Object.keys(config).length > 0 ? config : undefined,
-        contents: params.contents,
-      });
-
-      const text = response.text || "";
-      return { text, model };
-    } catch (err: any) {
-      lastError = err;
-      const errMsg = err?.message || JSON.stringify(err);
-      console.warn(`Model ${model} attempt yielded (${errMsg.slice(0, 100)}...). Testing next fallback model...`);
-      // Brief pause before trying fallback model if 503 or 429
-      if (errMsg.includes("503") || errMsg.includes("high demand") || errMsg.includes("429") || errMsg.includes("UNAVAILABLE")) {
-        await new Promise((resolve) => setTimeout(resolve, 250));
-      }
-    }
-  }
-  throw lastError;
-}
-
 // Configure Cloudinary if environment variables are provided
 const isCloudinaryConfigured = Boolean(
   process.env.CLOUDINARY_CLOUD_NAME &&
@@ -87,7 +43,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY),
     hasCloudinary: isCloudinaryConfigured,
   });
 });
@@ -177,7 +133,8 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
         const rawBase64 = audioBase64.includes(",") ? audioBase64.split(",")[1] : audioBase64;
         const cleanMime = mimeType.split(";")[0] || "audio/webm";
 
-        const transcribeResponse = await generateContentWithFallback(ai, {
+        const transcribeResponse = await ai.models.generateContent({
+          model: "gemini-3.7-flash",
           contents: [
             {
               role: "user",
@@ -194,7 +151,6 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
               ],
             },
           ],
-          preferredModels: ["gemini-3.5-transcribe", "gemini-3.8-flash", "gemini-flash-latest"],
         });
 
         finalTranscript = (transcribeResponse.text || "").trim();
@@ -208,8 +164,6 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
     }
 
     // 2. Classify emergency category using Gemini
-    // Exact requested system instruction:
-    // "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else."
     const VALID_CATEGORIES = [
       "Flood",
       "Fire",
@@ -223,10 +177,13 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
 
     if (ai) {
       try {
-        const classificationResponse = await generateContentWithFallback(ai, {
-          systemInstruction:
-            "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else.",
-          temperature: 0.1,
+        const classificationResponse = await ai.models.generateContent({
+          model: "gemini-3.7-flash",
+          config: {
+            systemInstruction:
+              "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else.",
+            temperature: 0.1,
+          },
           contents: [
             {
               role: "user",
@@ -237,7 +194,6 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
               ],
             },
           ],
-          preferredModels: ["gemini-3.8-flash", "gemini-flash-latest", "gemini-2.5-flash"],
         });
 
         const rawCategory = (classificationResponse.text || "").trim();
@@ -304,128 +260,122 @@ app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
   }
 });
 
-
-
-// TrahiGPT First-Aid & Emergency Response Chat Endpoint
-app.post(["/api/trahigpt-chat", "/trahigpt-chat"], async (req, res) => {
+// TrahiGPT First-Aid & Emergency Response Chat Endpoint (Tanvi's Implementation)
+app.post(["/api/trahigpt/chat", "/api/trahigpt-chat"], async (req, res) => {
   try {
     const { prompt, history = [] } = req.body;
 
-    if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({ error: "Missing or invalid prompt string" });
+    if (!prompt || typeof prompt !== "string" || !prompt.trim()) {
+      return res.status(400).json({ success: false, error: "Missing or invalid prompt string" });
+    }
+
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({
+        success: false,
+        error: "GEMINI_API_KEY is not configured in the backend environment file (.env).",
+      });
     }
 
     const ai = getGenAI();
-
     if (!ai) {
-      return res.status(503).json({
+      return res.status(500).json({
         success: false,
-        errorType: "CONFIG_MISSING",
-        message: "TrahiGPT is currently unavailable — the AI service is not configured. Please contact support.",
+        error: "Failed to initialize Gemini AI client.",
       });
     }
 
-    try {
-      const systemInstruction = `You are TrahiGPT, an expert AI Emergency Triage & First-Aid Assistant for India.
+    const systemInstruction = `You are TrahiGPT, an expert AI Emergency Triage & First-Aid Assistant for India.
 Your mission is to provide life-saving, panic-resistant, step-by-step first aid protocols, disaster survival instructions, and emergency guidance.
+Format your responses cleanly using Markdown:
+- Bold crucial action items (e.g. **Step 1: Check for breathing**)
+- Use structured bullet points (- item)
+- Highlight critical warnings (e.g. > 🚨 **EMERGENCY WARNING**: Do not apply ice directly to burns)
+- Mention relevant Indian emergency hotlines when applicable: **112** (National Emergency), **108** (Ambulance), **101** (Fire), **100** (Police).
+Keep guidance clear, high-contrast readable, precise, and actionable in low-time/distress situations. Answer all questions dynamically based on the exact situation described.`;
 
-CRITICAL INSTRUCTION: You MUST return your response strictly as valid JSON matching this exact structure (no raw markdown wrapper if possible):
-{
-  "title": "Short descriptive title of protocol or emergency response",
-  "summary": "1-2 sentence quick summary of immediate critical action needed",
-  "urgency": "critical" | "high" | "moderate" | "info",
-  "steps": [
-    {
-      "stepNumber": 1,
-      "title": "Clear step title",
-      "description": "Actionable step instruction with bold key terms where appropriate",
-      "icon": "phone" | "heart" | "flame" | "shield" | "droplet" | "alert" | "user" | "activity" | "check"
-    }
-  ],
-  "contacts": [
-    {
-      "name": "Hotline or service name",
-      "number": "Phone number e.g. 112, 108, 101, 100, 1078, 1091",
-      "category": "Category e.g. National Emergency, Ambulance, Fire, Police, Disaster Response"
-    }
-  ],
-  "stats": [
-    {
-      "label": "Metric name e.g. Compression Rate",
-      "value": "Value e.g. 100-120 / min",
-      "subtext": "Subtext context e.g. Rhythm of 'Stayin' Alive'"
-    }
-  ],
-  "warnings": [
-    "Critical warning or 'DO NOT' instruction"
-  ],
-  "notes": "Additional advice or follow-up recommendation"
-}
-
-Always populate relevant Indian emergency contacts in the "contacts" array (e.g., 112 National Emergency, 108 Ambulance, 101 Fire, 100 Police, 1078 NDRF).
-If a field like "stats" or "warnings" is not applicable, return an empty array [] for it, but always provide "title" and "summary".`;
-
-      // Format history for Gemini contents
-      const contents: any[] = [];
-      for (const msg of history.slice(-6)) {
-        contents.push({
-          role: msg.sender === "user" ? "user" : "model",
-          parts: [{ text: msg.text }],
-        });
+    // Format conversation history for Gemini contents
+    const contents: any[] = [];
+    if (Array.isArray(history)) {
+      for (const msg of history.slice(-10)) {
+        if (msg && msg.text && typeof msg.text === "string") {
+          contents.push({
+            role: msg.sender === "user" ? "user" : "model",
+            parts: [{ text: msg.text }],
+          });
+        }
       }
-      contents.push({
-        role: "user",
-        parts: [{ text: prompt }],
-      });
+    }
 
-      const response = await generateContentWithFallback(ai, {
-        systemInstruction,
-        temperature: 0.4,
-        responseMimeType: "application/json",
-        contents,
-        preferredModels: ["gemini-2.5-flash", "gemini-flash-latest", "gemini-3.8-flash"],
-      });
+    // Add current user prompt
+    contents.push({
+      role: "user",
+      parts: [{ text: prompt.trim() }],
+    });
 
-      const replyText = response.text || "{}";
-      return res.json({
-        success: true,
-        reply: replyText,
-        provider: response.model,
-      });
-    } catch (geminiErr: any) {
-      console.error("Gemini TrahiGPT Chat API call failed:", geminiErr?.message || geminiErr);
-      const errMsg = (geminiErr?.message || "").toLowerCase();
-      const status = geminiErr?.status || 500;
+    const modelsToTry = [
+      "gemini-2.5-flash",
+      "gemini-1.5-flash",
+      "gemini-2.0-flash",
+      "gemini-3.7-flash",
+    ];
 
-      if (
-        status === 429 ||
-        status === 503 ||
-        errMsg.includes("429") ||
-        errMsg.includes("quota") ||
-        errMsg.includes("resource_exhausted") ||
-        errMsg.includes("high demand") ||
-        errMsg.includes("503") ||
-        errMsg.includes("unavailable")
-      ) {
-        return res.status(429).json({
-          success: false,
-          errorType: "RATE_LIMIT",
-          message: "TrahiGPT is experiencing high demand right now. Please try again in a moment, or use the Emergency Contacts list below for immediate help.",
+    let replyText = "";
+    let lastError: any = null;
+    let successfulModel = "";
+
+    for (const modelName of modelsToTry) {
+      try {
+        const response = await ai.models.generateContent({
+          model: modelName,
+          config: {
+            systemInstruction,
+            temperature: 0.3,
+          },
+          contents,
         });
+
+        replyText = (response.text || "").trim();
+        if (replyText) {
+          successfulModel = modelName;
+          break;
+        }
+      } catch (err: any) {
+        lastError = err;
+        console.warn(`Model ${modelName} call failed/unavailable, trying next model...`, err?.message || err);
+      }
+    }
+
+    if (!replyText) {
+      // Parse error message cleanly if available
+      let errorMsg = lastError?.message || "Failed to generate AI response from Gemini API.";
+      try {
+        if (typeof errorMsg === "string" && errorMsg.includes("{")) {
+          const parsed = JSON.parse(errorMsg.substring(errorMsg.indexOf("{")));
+          if (parsed?.error?.message) {
+            errorMsg = parsed.error.message;
+          }
+        }
+      } catch (e) {
+        // Keep original error string
       }
 
       return res.status(500).json({
         success: false,
-        errorType: "GENERAL_ERROR",
-        message: "Something went wrong reaching TrahiGPT. Please check your connection and try again.",
+        error: errorMsg,
       });
     }
+
+    return res.json({
+      success: true,
+      reply: replyText,
+      provider: successfulModel,
+    });
   } catch (error: any) {
-    console.error("Error in /api/trahigpt-chat endpoint:", error);
+    console.error("Error in /api/trahigpt/chat:", error?.message || error);
     return res.status(500).json({
       success: false,
-      errorType: "GENERAL_ERROR",
-      message: "Something went wrong reaching TrahiGPT. Please check your connection and try again.",
+      error: error?.message || "Failed to process chat query via Gemini API.",
     });
   }
 });
@@ -451,9 +401,9 @@ async function setupServer() {
   });
 }
 
+// Preserve Vercel API export from main
 if (!process.env.VERCEL) {
   setupServer();
 }
 
 export default app;
-
