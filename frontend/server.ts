@@ -395,9 +395,15 @@ async function setupServer() {
     });
   }
 
-  app.listen(PORT, "0.0.0.0", () => {
-    console.log(`Trahi Server running on http://0.0.0.0:${PORT}`);
-  });
+  if (process.env.VERCEL !== "1") {
+    app.listen(PORT, "0.0.0.0", () => {
+      console.log(`Trahi Server running on http://0.0.0.0:${PORT}`);
+    });
+  }
+}
+
+if (process.env.VERCEL !== "1") {
+  setupServer();
 }
 
 // Preserve Vercel API export from main
