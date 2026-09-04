@@ -22,9 +22,6 @@ import {
   sendTrahiGPTMessage,
 } from '../../services/trahiGPTService.ts';
 import { MarkdownRenderer } from './MarkdownRenderer.tsx';
-import { StructuredResponseRenderer } from './StructuredResponseRenderer.tsx';
-import { TrahiGPTErrorCard } from './TrahiGPTErrorCard.tsx';
-import { EmergencyContactsModal } from './EmergencyContactsModal.tsx';
 import { TrahiGPTInputBar } from './TrahiGPTInputBar.tsx';
 import { TrahiGPTSidebar } from './TrahiGPTSidebar.tsx';
 
@@ -42,7 +39,6 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [showEmergencyModal, setShowEmergencyModal] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -148,16 +144,13 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
     setIsLoading(true);
 
     try {
-      const result = await sendTrahiGPTMessage(userText, updatedMessages);
+      const reply = await sendTrahiGPTMessage(userText, updatedMessages);
 
       const assistantMessage: ChatMessage = {
         id: `ast-msg-${Date.now()}`,
         sender: 'assistant',
-        text: result.text,
+        text: reply,
         timestamp: Date.now(),
-        structuredData: result.structuredData,
-        errorType: result.errorType,
-        retryPrompt: result.retryPrompt,
       };
 
       setSessions((prev) =>
@@ -256,7 +249,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                 </span>
               </div>
               <p className="hidden sm:block text-[11px] text-gray-400 font-medium">
-                Gemini 2.5 Flash Triage • Structured Emergency Protocol Active
+                Gemini 3.7 Flash Triage • Emergency Protocol Active
               </p>
             </div>
           </div>
@@ -352,7 +345,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                   )}
 
                   {/* Message Bubble Container */}
-                  <div className={`group relative max-w-[92%] sm:max-w-[85%]`}>
+                  <div className={`group relative max-w-[88%] sm:max-w-[80%]`}>
                     <div
                       className={`p-4 rounded-3xl text-sm leading-relaxed ${
                         isUser
@@ -362,18 +355,6 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                     >
                       {isUser ? (
                         <p className="whitespace-pre-wrap">{message.text}</p>
-                      ) : message.errorType ? (
-                        <TrahiGPTErrorCard
-                          errorType={message.errorType}
-                          onShowEmergencyContacts={() => setShowEmergencyModal(true)}
-                          onRetry={
-                            message.retryPrompt
-                              ? () => handleSendMessage(message.retryPrompt!)
-                              : undefined
-                          }
-                        />
-                      ) : message.structuredData ? (
-                        <StructuredResponseRenderer data={message.structuredData} />
                       ) : (
                         <MarkdownRenderer content={message.text} />
                       )}
@@ -391,11 +372,11 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                           minute: '2-digit',
                         })}
                       </span>
-                      {!isUser && !message.errorType && (
+                      {!isUser && (
                         <button
                           onClick={() => copyToClipboard(message.text, message.id)}
                           className="opacity-0 group-hover:opacity-100 hover:text-gray-700 transition cursor-pointer flex items-center gap-1"
-                          title="Copy Content"
+                          title="Copy Markdown Text"
                         >
                           {copiedId === message.id ? (
                             <>
@@ -435,7 +416,7 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                 </div>
                 <div className="p-3.5 rounded-2xl bg-white border border-gray-200/80 text-gray-600 text-xs flex items-center gap-2 shadow-2xs font-medium">
                   <Activity size={14} className="animate-spin text-[#0F9D8F]" />
-                  <span>TrahiGPT Triage Engine analyzing query with Gemini 2.5 Flash...</span>
+                  <span>TrahiGPT Triage Engine analyzing query...</span>
                 </div>
               </motion.div>
             )}
@@ -447,13 +428,6 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
 
       {/* 4. Bottom Centered Input Bar with Web Speech API Voice Input */}
       <TrahiGPTInputBar onSendMessage={handleSendMessage} isLoading={isLoading} />
-
-      {/* 5. Emergency Contacts National Helpline Modal */}
-      <EmergencyContactsModal
-        isOpen={showEmergencyModal}
-        onClose={() => setShowEmergencyModal(false)}
-      />
     </div>
   );
 };
-
