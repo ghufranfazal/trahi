@@ -1,9 +1,35 @@
+export interface TrahiGPTStructuredResponse {
+  title?: string;
+  urgency?: 'critical' | 'high' | 'moderate' | 'info';
+  summary?: string;
+  stats?: Array<{
+    label: string;
+    value: string;
+    subtext?: string;
+  }>;
+  steps?: Array<{
+    stepNumber?: number;
+    icon?: string;
+    title: string;
+    description: string;
+  }>;
+  contacts?: Array<{
+    name: string;
+    number: string;
+    category?: string;
+  }>;
+  warnings?: string[];
+  notes?: string;
+}
+
 export interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: number;
   category?: string;
+  structuredData?: TrahiGPTStructuredResponse;
+  errorType?: 'CONFIG_MISSING' | 'RATE_LIMIT' | 'GENERAL_ERROR';
 }
 
 export interface ChatSession {
