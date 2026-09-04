@@ -35,6 +35,7 @@ import { getCategoryConfig, CATEGORY_CONFIGS } from '../donor/DonorCrisisMapTab.
 import { CrisisDetailsModal, SelectedCrisisItem } from '../donor/CrisisDetailsModal.tsx';
 import { HomeMiniCrisisMap } from './HomeMiniCrisisMap.tsx';
 import { RazorpayDonateModal } from '../donor/RazorpayDonateModal.tsx';
+import { ProfileViewButton } from '../profile/ProfileViewButton.tsx';
 
 interface HomeDashboardProps {
   onNavigateToSOS: () => void;
@@ -505,13 +506,16 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                     </p>
 
                     <div className="flex items-center justify-between text-[11px] text-gray-500 pt-1 border-t border-gray-100">
-                      <span className="flex items-center gap-1 truncate max-w-[180px]">
+                      <span className="flex items-center gap-1 truncate max-w-[150px]">
                         <MapPin size={12} className="text-gray-400 shrink-0" />
                         {userCase.userAddress || 'Ground Location'}
                       </span>
-                      <span className="text-[10px] font-mono text-gray-400">
-                        {formatTimeAgo(userCase.timestamp)}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <ProfileViewButton userId={userCase.userId} variant="badge" size="sm" />
+                        <span className="text-[10px] font-mono text-gray-400">
+                          {formatTimeAgo(userCase.timestamp)}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 );
@@ -712,18 +716,26 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   </div>
 
                   {/* Fast Action Buttons in Card */}
-                  <div className="grid grid-cols-2 gap-2 pt-1">
+                  <div className="grid grid-cols-3 gap-1.5 pt-1">
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setSelectedCrisisItem({ type: 'sos', data: item });
                       }}
-                      className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-xs rounded-xl transition flex items-center justify-center gap-1"
+                      className="w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 font-extrabold text-[11px] sm:text-xs rounded-xl transition flex items-center justify-center gap-1"
                     >
                       <Eye size={13} />
-                      <span>View Details</span>
+                      <span>Details</span>
                     </button>
+
+                    <ProfileViewButton
+                      userId={item.userId}
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-[11px] sm:text-xs"
+                      customLabel="Profile"
+                    />
 
                     <button
                       type="button"
@@ -731,7 +743,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                         e.stopPropagation();
                         handleTriggerDonate(`Aid Fund: ${item.userAddress || config.label}`, item.id);
                       }}
-                      className="w-full py-2 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1"
+                      className="w-full py-2 bg-[#0F9D8F] hover:bg-[#0c8579] text-white font-extrabold text-[11px] sm:text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1"
                     >
                       <HeartHandshake size={13} />
                       <span>Donate</span>

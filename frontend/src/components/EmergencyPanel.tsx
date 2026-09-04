@@ -1,7 +1,27 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { PhoneCall, ShieldAlert, Radio, AlertTriangle, Activity, HeartHandshake } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
+import { subscribeToMySafetyCircle } from '../services/firestoreService.ts';
+import { SafetyCircleMember } from '../types.ts';
+import { FamilySafetyPingWidget } from './safety/FamilySafetyPingWidget.tsx';
+import { AddFamilyMemberModal } from './safety/AddFamilyMemberModal.tsx';
+import { AuthorityPortal } from './authority/AuthorityPortal.tsx';
 
-export const EmergencyPanel: React.FC = () => {
+interface EmergencyPanelProps {
+  onNavigateToProfile?: () => void;
+}
+
+export const EmergencyPanel: React.FC<EmergencyPanelProps> = ({ onNavigateToProfile }) => {
+  const { user } = useAuth();
+  const [members, setMembers] = useState<SafetyCircleMember[]>([]);
+  const [isAddOpen, setIsAddOpen] = useState<boolean>(false);
+  const [showAuthorityPortal, setShowAuthorityPortal] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+    const unsub = subscribeToMySafetyCircle(user.uid, (data) => setMembers(data));
+    return () => unsub();
+  }, [user]);
   const helplines = [
     { label: 'National All-in-One', number: '112', desc: 'Police, Fire, Medical, Disaster', color: 'red' },
     { label: 'Police Control', number: '100', desc: 'Direct Police Dispatch', color: 'teal' },
@@ -13,7 +33,13 @@ export const EmergencyPanel: React.FC = () => {
 
   return (
     <div id="desktop-emergency-panel" className="flex flex-col gap-5 w-full">
-      {/* 1. Live Readiness Status Card */}
+      {/* 1. Feature 3: One-Tap Safety Circle & Family Ping Widget */}
+      <FamilySafetyPingWidget
+        familyMembers={members}
+        onOpenAddMember={() => setIsAddOpen(true)}
+      />
+
+      {/* 2. Live Readiness Status Card */}
       <div className="bg-white rounded-3xl p-5 lg:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100">
         <div className="flex items-center justify-between pb-3 border-b border-gray-100">
           <div className="flex items-center gap-2">
@@ -43,7 +69,40 @@ export const EmergencyPanel: React.FC = () => {
         </div>
       </div>
 
-      {/* 2. Instant National Emergency Dialers */}
+      {/* 2. Authority Portal Card & Command Center Access */}
+      <div className="bg-gradient-to-r from-red-600 to-rose-700 rounded-3xl p-5 lg:p-6 text-white shadow-md space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center text-white">
+              <ShieldAlert size={22} />
+            </div>
+            <div>
+              <h4 className="text-base font-black text-white leading-tight">Authority & Responder Portal</h4>
+              <p className="text-xs text-white/80 font-medium">Ground dispatch queue & victim telemetry</p>
+            </div>
+          </div>
+        </div>
+
+        <p className="text-xs text-white/90 leading-relaxed">
+          Access live active SOS incidents, view victim profile data & emergency vitals, and update responder dispatch status.
+        </p>
+
+        <button
+          type="button"
+          onClick={() => setShowAuthorityPortal(!showAuthorityPortal)}
+          className="w-full py-2.5 bg-white hover:bg-gray-100 text-red-700 font-extrabold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+        >
+          <Activity size={15} />
+          <span>{showAuthorityPortal ? 'Hide Authority Command' : 'Open Authority Dispatch Queue'}</span>
+        </button>
+      </div>
+
+      {/* Embedded Authority Portal View */}
+      {showAuthorityPortal && (
+        <AuthorityPortal onClose={() => setShowAuthorityPortal(false)} />
+      )}
+
+      {/* 3. Instant National Emergency Dialers */}
       <div className="bg-white rounded-3xl p-5 lg:p-6 shadow-[0_4px_20px_rgba(0,0,0,0.03)] border border-gray-100">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -79,6 +138,13 @@ export const EmergencyPanel: React.FC = () => {
           ))}
         </div>
       </div>
+
+      {/* Add Family Member Modal */}
+      <AddFamilyMemberModal
+        isOpen={isAddOpen}
+        onClose={() => setIsAddOpen(false)}
+      />
     </div>
   );
 };
+

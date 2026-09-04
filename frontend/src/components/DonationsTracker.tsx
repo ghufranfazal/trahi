@@ -5,7 +5,8 @@ import { Donation, DonationStatus } from '../types.ts';
 import { seedDonationsIfEmpty, createDonation, updateDonationStatus } from '../services/firestoreService.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 import { RazorpayDonateModal } from './donor/RazorpayDonateModal.tsx';
-import { downloadDonationPDFReport } from '../services/pdfReportService.ts';
+import { downloadDonationPDFReport, fetchLinkedSOSReport } from '../services/pdfReportService.ts';
+import { ProfileViewButton } from './profile/ProfileViewButton.tsx';
 import { 
   Heart, 
   CheckCircle2, 
@@ -43,6 +44,21 @@ export const DonationsTracker: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [linkedSOSUserId, setLinkedSOSUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!selectedDonation?.sosReportId) {
+      setLinkedSOSUserId(null);
+      return;
+    }
+    let isMounted = true;
+    fetchLinkedSOSReport(selectedDonation.sosReportId).then((report) => {
+      if (isMounted) {
+        setLinkedSOSUserId(report?.userId || selectedDonation.donorUserId || selectedDonation.sosReportId);
+      }
+    });
+    return () => { isMounted = false; };
+  }, [selectedDonation]);
 
   const handleDownloadPDF = async (donation: Donation) => {
     const key = donation.id || donation.sosReportId || 'current';
@@ -270,23 +286,31 @@ export const DonationsTracker: React.FC = () => {
                       />
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDownloadPDF(item);
-                      }}
-                      disabled={downloadingId === (item.id || item.sosReportId)}
-                      className="px-2 py-0.5 rounded-lg bg-gray-50 hover:bg-teal-50 text-gray-600 hover:text-[#0F9D8F] border border-gray-200 text-[10px] font-bold flex items-center gap-1 transition shrink-0"
-                      title="Download PDF"
-                    >
-                      {downloadingId === (item.id || item.sosReportId) ? (
-                        <Loader2 size={10} className="animate-spin text-[#0F9D8F]" />
-                      ) : (
-                        <Download size={10} className="text-[#0F9D8F]" />
-                      )}
-                      <span>PDF</span>
-                    </button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <ProfileViewButton
+                        userId={item.donorUserId || item.donorId || item.sosReportId}
+                        variant="icon"
+                        size="sm"
+                      />
+
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownloadPDF(item);
+                        }}
+                        disabled={downloadingId === (item.id || item.sosReportId)}
+                        className="px-2 py-1 rounded-xl bg-gray-50 hover:bg-teal-50 text-gray-600 hover:text-[#0F9D8F] border border-gray-200 text-[10px] font-bold flex items-center gap-1 transition cursor-pointer"
+                        title="Download PDF"
+                      >
+                        {downloadingId === (item.id || item.sosReportId) ? (
+                          <Loader2 size={10} className="animate-spin text-[#0F9D8F]" />
+                        ) : (
+                          <Download size={10} className="text-[#0F9D8F]" />
+                        )}
+                        <span>PDF</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               );
@@ -301,13 +325,21 @@ export const DonationsTracker: React.FC = () => {
               {/* Header Info */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-5 border-b border-gray-100 gap-3">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="text-xs font-mono font-bold text-gray-400">
                       Tracking SOS Aid:
                     </span>
                     <span className="text-xs font-mono font-bold px-2 py-0.5 bg-gray-100 text-gray-800 rounded-md">
                       {selectedDonation.sosReportId}
                     </span>
+                    {linkedSOSUserId && (
+                      <ProfileViewButton
+                        userId={linkedSOSUserId}
+                        variant="badge"
+                        size="sm"
+                        customLabel="Victim Profile"
+                      />
+                    )}
                   </div>
                   <h3 className="text-xl sm:text-2xl font-black text-gray-900 mt-1">
                     ₹{selectedDonation.amount.toLocaleString('en-IN')} Relief Disbursement

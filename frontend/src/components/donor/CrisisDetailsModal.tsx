@@ -21,6 +21,7 @@ import {
 import { FormattedEarthquake } from '../../services/earthquakeService.ts';
 import { SOSReport } from '../../types.ts';
 import { getCategoryConfig } from './DonorCrisisMapTab.tsx';
+import { ProfileViewButton } from '../profile/ProfileViewButton.tsx';
 
 export type SelectedCrisisItem = 
   | { type: 'earthquake'; data: FormattedEarthquake }
@@ -282,6 +283,16 @@ export const CrisisDetailsModal: React.FC<CrisisDetailsModalProps> = ({
                 <span>USGS Event Page</span>
                 <ExternalLink size={13} />
               </a>
+            )}
+
+            {sosData && (
+              <ProfileViewButton
+                userId={sosData.userId}
+                variant="outline"
+                size="md"
+                className="w-full sm:w-auto py-2.5"
+                customLabel="View Victim Profile"
+              />
             )}
 
             <button

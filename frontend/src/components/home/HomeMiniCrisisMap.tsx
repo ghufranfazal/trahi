@@ -23,6 +23,7 @@ import {
 import { SOSReport } from '../../types.ts';
 import { FormattedEarthquake } from '../../services/earthquakeService.ts';
 import { getCategoryConfig, createCategoryPinIcon, CATEGORY_CONFIGS } from '../donor/DonorCrisisMapTab.tsx';
+import { ProfileViewButton } from '../profile/ProfileViewButton.tsx';
 
 interface HomeMiniCrisisMapProps {
   sosReports: SOSReport[];
@@ -209,16 +210,25 @@ export const HomeMiniCrisisMap: React.FC<HomeMiniCrisisMapProps> = ({
                       </p>
                     )}
 
-                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                    <div className="grid grid-cols-3 gap-1 pt-1">
                       <button
                         onClick={() => onSelectCrisis(sos)}
-                        className="py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[11px] font-bold rounded-lg transition"
+                        className="py-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-[10px] font-bold rounded-lg transition"
                       >
                         Details
                       </button>
+
+                      <ProfileViewButton
+                        userId={sos.userId}
+                        variant="outline"
+                        size="sm"
+                        className="py-1 text-[10px] font-bold px-1"
+                        customLabel="Profile"
+                      />
+
                       <button
                         onClick={() => onOpenDonate(`Aid Fund: ${sos.userAddress || config.label}`, sos.id)}
-                        className="py-1.5 bg-[#0F9D8F] hover:bg-[#0c8579] text-white text-[11px] font-bold rounded-lg transition"
+                        className="py-1 bg-[#0F9D8F] hover:bg-[#0c8579] text-white text-[10px] font-bold rounded-lg transition"
                       >
                         Donate
                       </button>

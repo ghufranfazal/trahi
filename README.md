@@ -46,6 +46,7 @@ Trahi combines four pillars into one platform:
 ### 🤖 TrahiGPT — AI Emergency Assistant
 - Powered by the Gemini API.
 - Uses a lightweight retrieval approach (local contact database + prompt injection) to surface the nearest police station, disaster authority, or helpline based on the user's location — no heavy RAG pipeline required.
+- **Offline & Low-Latency Simulator Engine**: Built-in structured triage generator for critical disaster & first-aid scenarios (CPR & Cardiac Arrest, Severe Thermal Burns, Venomous Snakebites, Severe Hemorrhage, Earthquake Survival, Flood Rescue, Choking/Heimlich Maneuver). Renders color-coded urgency badges, step-by-step action plans, vital metrics, critical warning banners, and one-touch helpline dialers (`112`, `108`, `101`, `100`, `1078`, `1926`), with a universal fallback for any custom query.
 
 ### 📍 Location & Live Disaster Data
 - Mandatory location permission (app is gated until granted) using the browser Geolocation API.
@@ -64,10 +65,16 @@ Trahi combines four pillars into one platform:
 - **Public, login-free Transparency Ledger** — anyone can audit any case's full history, verifier decisions, and utilization proof, downloadable as a PDF report.
 - Donation payments simulated via Razorpay Test Mode for the hackathon build.
 
-### 📶 Offline-First Resilience
-- Built as a Progressive Web App (PWA) with a Service Worker — app shell, cached alerts, and emergency contacts remain accessible without internet.
+### 📶 Offline-First Resilience & PWA Capabilities
+- Built as a Progressive Web App (PWA) with a Service Worker (`sw.js`) — app shell, cached alerts, and emergency contacts remain accessible without internet.
+- **Web App Manifest & Brand Icon Suite**: `manifest.json` configured with `display: "standalone"`, `theme_color: "#0F9D8F"`, and custom high-resolution PNG brand icons (`pwa-512x512.png`, `pwa-192x192.png`, `apple-touch-icon.png`, `favicon.png`).
+- **Header Three-Dot Options Menu**: Integrated `⋮` options menu in the header with an **"Install App"** button that invokes browser PWA installation or provides visual instructions for Android (Chrome/Edge) and iOS (Safari).
 - SOS recordings are queued locally (IndexedDB) when offline and auto-sync the moment connectivity returns.
 - SMS fallback for zero-data situations — a native SMS intent sends location and an emergency message using only cellular signal, no internet required.
+
+### 📱 Mobile View & Profile Features
+- **Smart Bottom Navigation Tray**: Auto-hides when launching TrahiGPT to provide an unobstructed, full-screen conversational view and voice input bar on mobile devices.
+- **Victim SOS Profile View**: Reusable profile modal component displaying synced Firestore contact, blood group, medical conditions, and next-of-kin emergency details across SOS displays.
 
 ---
 
@@ -171,8 +178,10 @@ Push to GitHub, then import the repository into Vercel. Add the same environment
 
 ### Hackathon Build (Current)
 - Working SOS voice broadcast with auto-categorization
-- TrahiGPT assistant via Gemini API
+- TrahiGPT assistant via Gemini API & offline triage simulation engine with rich protocol UI cards
 - Mandatory location + live map preview
+- Full Progressive Web App (PWA) with manifest, custom brand icons, offline Service Worker, and Three-Dot "Install App" header menu
+- Mobile view UX optimizations (Tray auto-hide on TrahiGPT view, victim profile inspection modal)
 - Mock police/authority routing dashboard
 - Donation tracking UI with dummy/test-mode data
 - Offline PWA support with SMS fallback

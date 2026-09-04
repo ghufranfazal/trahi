@@ -43,6 +43,7 @@ import { subscribeToSOSReports } from '../../services/firestoreService.ts';
 import { SOSReport, EmergencyCategory } from '../../types.ts';
 import { CrisisDetailsModal, SelectedCrisisItem } from './CrisisDetailsModal.tsx';
 import { useLocation } from '../../context/LocationContext.tsx';
+import { ProfileViewButton } from '../profile/ProfileViewButton.tsx';
 
 // Category Configuration Definition
 export interface CategoryConfig {
@@ -665,15 +666,25 @@ export const DonorCrisisMapTab: React.FC<DonorCrisisMapTabProps> = ({ onNavigate
                       </p>
                     </div>
 
-                    {/* "View Details" Button */}
-                    <button
-                      onClick={() => setSelectedCrisisItem({ type: 'sos', data: sos })}
-                      style={{ backgroundColor: config.color }}
-                      className="w-full py-2 hover:brightness-110 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer mt-1"
-                    >
-                      <Info size={13} />
-                      <span>View Details</span>
-                    </button>
+                    {/* Action Buttons: View Details & View Profile */}
+                    <div className="grid grid-cols-2 gap-1.5 pt-1">
+                      <button
+                        onClick={() => setSelectedCrisisItem({ type: 'sos', data: sos })}
+                        style={{ backgroundColor: config.color }}
+                        className="w-full py-2 hover:brightness-110 text-white font-bold text-xs rounded-xl shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <Info size={13} />
+                        <span>Details</span>
+                      </button>
+
+                      <ProfileViewButton
+                        userId={sos.userId}
+                        variant="outline"
+                        size="sm"
+                        className="w-full text-xs"
+                        customLabel="Profile"
+                      />
+                    </div>
                   </div>
                 </Popup>
               </Marker>

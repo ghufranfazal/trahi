@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Sparkles, Siren, Heart, User, LogOut, Radio, UserCheck } from 'lucide-react';
+import { Home, Sparkles, Siren, Heart, User, LogOut, Radio, UserCheck, ShieldAlert } from 'lucide-react';
 import { TabType } from '../types.ts';
 import { useAuth } from '../context/AuthContext.tsx';
 
@@ -18,7 +18,8 @@ export const SidebarNav: React.FC<SidebarNavProps> = ({
     { id: 'home', label: 'Home', icon: <Home size={20} /> },
     { id: 'trahigpt', label: 'TrahiGPT', icon: <Sparkles size={20} />, badge: 'AI' },
     { id: 'sos', label: 'SOS Alert', icon: <Siren size={20} />, badge: 'Active' },
-    { id: 'donate', label: 'Donations Ledger', icon: <Heart size={20} />, badge: 'Live' },
+    { id: 'preparedness', label: 'Hazard & Kits', icon: <ShieldAlert size={20} />, badge: 'Live' },
+    { id: 'donate', label: 'Donations Ledger', icon: <Heart size={20} /> },
     { id: 'profile', label: 'Profile', icon: <User size={20} /> },
   ];
 

@@ -1,4 +1,4 @@
-export type TabType = 'home' | 'trahigpt' | 'sos' | 'donate' | 'profile';
+export type TabType = 'home' | 'trahigpt' | 'sos' | 'preparedness' | 'donate' | 'profile';
 
 export type DonorTabType = 'back' | 'map' | 'donate' | 'history' | 'profile';
 
@@ -26,6 +26,27 @@ export interface UserLocationDetails {
   state: string;
 }
 
+export type SafetyStatus = 'SAFE' | 'DISTRESS' | 'UNKNOWN';
+
+export interface SafetyCircleMember {
+  id?: string;
+  addedByUid: string;
+  addedByEmail: string;
+  addedByName?: string;
+  familyMemberEmail: string;
+  familyMemberUid?: string;
+  status: 'VERIFIED' | 'PENDING';
+  fullName: string;
+  gender: 'Male' | 'Female' | 'Other' | string;
+  age: number | string;
+  phone: string;
+  city: string;
+  state: string;
+  pincode: string;
+  relation: string;
+  createdAt: string | number;
+}
+
 export interface UserProfile {
   userId: string;
   uid?: string; // backwards compatibility alias for userId
@@ -39,6 +60,14 @@ export interface UserProfile {
   authType?: AuthType;
   location?: UserLocationDetails;
   profileCompleted: boolean;
+  lastSafetyStatus?: SafetyStatus | string;
+  lastStatusTimestamp?: number;
+  lastKnownLocation?: {
+    latitude: number;
+    longitude: number;
+    address?: string;
+  };
+  batteryLevel?: number | string;
   createdAt: number;
   updatedAt?: number;
 }

@@ -1,8 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Radio, Mic, AlertTriangle, ShieldAlert } from 'lucide-react';
+import { Radio, Mic, AlertTriangle, ShieldAlert, Cloud, MessageSquare, Smartphone, Zap } from 'lucide-react';
 import { triggerHapticFeedback, SOSSubmissionResult } from '../services/sosSubmissionService.ts';
 import { SOSFlowModal } from './sos/SOSFlowModal.tsx';
+import { useNetwork } from '../context/NetworkContext.tsx';
+import { useLocation } from '../context/LocationContext.tsx';
 
 interface SOSButtonProps {
   onTriggerSOS?: () => void;
@@ -10,6 +12,9 @@ interface SOSButtonProps {
 }
 
 export const SOSButton: React.FC<SOSButtonProps> = ({ onTriggerSOS, onSOSSuccess }) => {
+  const { networkMode, dispatchNativeSMS, setIsMeshModalOpen } = useNetwork();
+  const { location } = useLocation();
+
   // Hold state
   const [isHolding, setIsHolding] = useState<boolean>(false);
   const [holdProgress, setHoldProgress] = useState<number>(0); // 0 to 100%
@@ -26,6 +31,31 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onTriggerSOS, onSOSSuccess
       if (holdTimerRef.current) clearInterval(holdTimerRef.current);
     };
   }, []);
+
+  const handleTriggerActivated = () => {
+    // 1. Trigger Haptic Vibration & Audio Cue
+    triggerHapticFeedback();
+
+    if (onTriggerSOS) {
+      onTriggerSOS();
+    }
+
+    // 2. Dispatch based on active network tier
+    if (networkMode === 'mesh') {
+      setIsMeshModalOpen(true);
+    } else if (networkMode === 'sms') {
+      dispatchNativeSMS({
+        category: 'Emergency SOS Broadcast',
+        latitude: location?.latitude,
+        longitude: location?.longitude,
+        address: location?.formattedAddress,
+        transcript: 'Emergency SOS beacon triggered. Immediate rescue required.',
+      });
+    } else {
+      // Tier 1: Online Cloud flow
+      setShowModal(true);
+    }
+  };
 
   const handlePointerDown = (e: React.PointerEvent | React.TouchEvent | React.MouseEvent) => {
     // Prevent context menu or dragging
@@ -47,14 +77,7 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onTriggerSOS, onSOSSuccess
         setIsHolding(false);
         setHoldProgress(0);
 
-        // 1. Trigger Haptic Vibration & Audio Cue
-        triggerHapticFeedback();
-
-        // 2. Open SOS Flow Modal & Begin Recording
-        setShowModal(true);
-        if (onTriggerSOS) {
-          onTriggerSOS();
-        }
+        handleTriggerActivated();
       }
     }, 25);
   };
@@ -80,11 +103,7 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onTriggerSOS, onSOSSuccess
 
   // Allow clicking as a fallback with quick tap trigger option
   const handleQuickActivate = () => {
-    triggerHapticFeedback();
-    setShowModal(true);
-    if (onTriggerSOS) {
-      onTriggerSOS();
-    }
+    handleTriggerActivated();
   };
 
   // SVG circular radius calculation for 2s progress stroke
@@ -218,14 +237,36 @@ export const SOSButton: React.FC<SOSButtonProps> = ({ onTriggerSOS, onSOSSuccess
         )}
       </AnimatePresence>
 
-      {/* Quick Tap fallback link */}
-      <div className="mt-1">
+      {/* Quick Tap fallback link & Transmission Mode Pill */}
+      <div className="mt-1 flex flex-col items-center gap-2">
         <button
           onClick={handleQuickActivate}
           className="text-xs font-bold text-gray-500 hover:text-[#F0294D] transition cursor-pointer underline decoration-dotted"
         >
-          Or tap here to start voice SOS immediately →
+          {networkMode === 'mesh' 
+            ? 'Tap to launch BLE Mesh Vision Demo →' 
+            : networkMode === 'sms'
+            ? 'Tap to trigger 1-tap SMS dispatch →'
+            : 'Or tap here to start voice SOS immediately →'}
         </button>
+
+        {/* Transmission Channel Status */}
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-extrabold bg-gray-100/90 text-gray-600 border border-gray-200">
+          <span className="text-gray-400 font-medium">Channel:</span>
+          {networkMode === 'online' ? (
+            <span className="text-emerald-700 flex items-center gap-1">
+              <Cloud size={12} /> Tier 1: Cloud Active (Firestore)
+            </span>
+          ) : networkMode === 'sms' ? (
+            <span className="text-amber-700 flex items-center gap-1">
+              <Smartphone size={12} /> Tier 2: 1-Tap SMS (112)
+            </span>
+          ) : (
+            <span className="text-purple-700 flex items-center gap-1">
+              <Zap size={12} /> Tier 3: BLE Mesh Simulation
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Full SOS Flow Modal (Recording -> 3s Cancel -> Broadcast -> Success) */}

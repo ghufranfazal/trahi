@@ -17,8 +17,9 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 // Lazy-initialized Gemini API client
 let genAIClient: GoogleGenAI | null = null;
 function getGenAI(): GoogleGenAI | null {
-  if (!genAIClient && process.env.GEMINI_API_KEY) {
-    genAIClient = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+  if (!genAIClient && apiKey) {
+    genAIClient = new GoogleGenAI({ apiKey });
   }
   return genAIClient;
 }
@@ -39,16 +40,16 @@ if (process.env.CLOUDINARY_CLOUD_NAME && process.env.CLOUDINARY_API_KEY && proce
 }
 
 // Health check endpoint
-app.get("/api/health", (req, res) => {
+app.get(["/api/health", "/health"], (req, res) => {
   res.json({
     status: "ok",
-    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
+    hasGeminiKey: Boolean(process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY),
     hasCloudinary: isCloudinaryConfigured,
   });
 });
 
 // Audio Upload Endpoint (Cloudinary with graceful fallback)
-app.post("/api/upload-audio", async (req, res) => {
+app.post(["/api/upload-audio", "/upload-audio"], async (req, res) => {
   try {
     const { audioData, mimeType = "audio/webm", fileName } = req.body;
 
@@ -117,7 +118,7 @@ app.post("/api/upload-audio", async (req, res) => {
 });
 
 // Gemini Emergency Classification & Transcription Endpoint
-app.post("/api/classify-sos", async (req, res) => {
+app.post(["/api/classify-sos", "/classify-sos"], async (req, res) => {
   try {
     const { transcript, audioBase64, mimeType = "audio/webm" } = req.body;
 
@@ -163,8 +164,6 @@ app.post("/api/classify-sos", async (req, res) => {
     }
 
     // 2. Classify emergency category using Gemini
-    // Exact requested system instruction:
-    // "Classify this emergency message into exactly one category: Flood, Fire, Earthquake, Medical Emergency, Crime/Violence, Building Collapse, Accident, or Other. Respond with only the category name, nothing else."
     const VALID_CATEGORIES = [
       "Flood",
       "Fire",
@@ -261,7 +260,7 @@ app.post("/api/classify-sos", async (req, res) => {
   }
 });
 
-// TrahiGPT First-Aid & Emergency Response Chat Endpoint
+// TrahiGPT First-Aid & Emergency Response Chat Endpoint (Tanvi's Implementation)
 app.post(["/api/trahigpt/chat", "/api/trahigpt-chat"], async (req, res) => {
   try {
     const { prompt, history = [] } = req.body;
@@ -270,7 +269,8 @@ app.post(["/api/trahigpt/chat", "/api/trahigpt-chat"], async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing or invalid prompt string" });
     }
 
-    if (!process.env.GEMINI_API_KEY) {
+    const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
+    if (!apiKey) {
       return res.status(500).json({
         success: false,
         error: "GEMINI_API_KEY is not configured in the backend environment file (.env).",
@@ -315,9 +315,8 @@ Keep guidance clear, high-contrast readable, precise, and actionable in low-time
 
     const modelsToTry = [
       "gemini-2.5-flash",
-      "gemini-1.5-flash",
-      "gemini-2.0-flash",
-      "gemini-3.7-flash",
+      "gemini-2.5-flash-lite",
+      "gemini-flash-latest",
     ];
 
     let replyText = "";
@@ -404,6 +403,11 @@ async function setupServer() {
 }
 
 if (process.env.VERCEL !== "1") {
+  setupServer();
+}
+
+// Preserve Vercel API export from main
+if (!process.env.VERCEL) {
   setupServer();
 }
 
