@@ -1,3 +1,23 @@
+/**
+ * ============================================================================
+ * DEMO-SAFE HARDCODED RESPONSE LAYER (Hackathon Reliability System)
+ * ============================================================================
+ * TrahiGPT currently operates with a 100% reliable local response lookup
+ * layer for hackathon demo stability, bypassing live network/API dependencies.
+ *
+ * TO RE-ENABLE LIVE GEMINI API:
+ * In `sendTrahiGPTMessage()`, comment out the `getHardcodedResponse()` block
+ * and uncomment the live `/api/trahigpt/chat` fetch implementation marked below.
+ * ============================================================================
+ */
+
+import {
+  getHardcodedResponse,
+  type TrahiGPTResponseResult,
+  CPR_RESPONSE,
+  SNAKEBITE_RESPONSE,
+} from './trahiGPTHardcodedResponses.ts';
+
 export interface TrahiGPTStructuredResponse {
   title?: string;
   urgency?: 'critical' | 'high' | 'moderate' | 'info';
@@ -56,7 +76,7 @@ export function getInitialSessions(): ChatSession[] {
     console.warn('Failed to load TrahiGPT sessions from localStorage:', e);
   }
 
-  // Fallback initial sample sessions
+  // Fallback initial sample sessions with structured data
   const sampleSessions: ChatSession[] = [
     {
       id: 'session-cpr-guide',
@@ -73,16 +93,8 @@ export function getInitialSessions(): ChatSession[] {
         {
           id: 'msg-2',
           sender: 'assistant',
-          text: `### 🩺 Emergency CPR & Cardiac Response Protocol
-
-> 🚨 **CALL IMMEDIATELY**: Dial **112** or **108** for an emergency ambulance before starting CPR.
-
-#### **Step-by-Step Hands-Only CPR:**
-1. **Position the Victim**: Place the person flat on their back on a firm surface.
-2. **Hand Placement**: Place the heel of one hand in the center of their chest. Lock second hand over the first with fingers interlaced.
-3. **Chest Compressions**: Push hard and fast at a rate of **100 to 120 compressions per minute**.
-4. **Depth**: Allow the chest to recoil completely between compressions (approx 2 inches or 5 cm deep).
-5. **Continue**: Do not stop until professional paramedic assistance arrives or an AED is available.`,
+          text: CPR_RESPONSE.reply,
+          structuredData: CPR_RESPONSE.structuredData,
           timestamp: Date.now() - 3600000 * 2 + 1000,
         },
       ],
@@ -102,18 +114,8 @@ export function getInitialSessions(): ChatSession[] {
         {
           id: 'msg-4',
           sender: 'assistant',
-          text: `### 🐍 Snakebite Emergency Triage (India Protocol)
-
-> 🚨 **EMERGENCY WARNING**: Treat all snakebites in India as potentially venomous (Cobra, Viper, Krait). Call **108** immediately.
-
-#### **Life-Saving Action Plan:**
-1. **Stay Calm & Immobilize**: Keep victim still. Keep bitten limb **below heart level**.
-2. **Remove Jewelry/Tight Items**: Remove rings, anklets, and shoes before swelling starts.
-3. **Clean Lightly**: Wipe wound gently with clean water. Cover loosely with sterile cloth.
-
-> ⚠️ **DO NOT**:
-> - **DO NOT** cut wound or suck out venom.
-> - **DO NOT** apply tight tourniquets or ice.`,
+          text: SNAKEBITE_RESPONSE.reply,
+          structuredData: SNAKEBITE_RESPONSE.structuredData,
           timestamp: Date.now() - 86400000 * 1 + 1000,
         },
       ],
@@ -139,14 +141,26 @@ export function saveSessionsToStorage(sessions: ChatSession[]): void {
 
 export async function sendTrahiGPTMessage(
   prompt: string,
-  history: ChatMessage[] = []
-): Promise<string> {
+  _history: ChatMessage[] = []
+): Promise<TrahiGPTResponseResult> {
+  // Simulate realistic AI response/thinking delay (800ms - 1200ms) for demo experience
+  const delayMs = Math.floor(Math.random() * 400) + 800;
+  await new Promise((resolve) => setTimeout(resolve, delayMs));
+
+  // --- HARDCODED DEMO-SAFE RESPONSE LAYER ---
+  // Returns pre-formated structured first-aid protocol for demo reliability.
+  return getHardcodedResponse(prompt);
+
+  /*
+  // ==========================================================================
+  // LIVE GEMINI API INTEGRATION (UNCOMMENT TO RE-ENABLE LIVE API CALL)
+  // ==========================================================================
   const res = await fetch('/api/trahigpt/chat', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt, history }),
+    body: JSON.stringify({ prompt, history: _history }),
   });
 
   const data = await res.json().catch(() => ({}));
@@ -159,5 +173,10 @@ export async function sendTrahiGPTMessage(
     throw new Error('No dynamic response returned from Gemini API.');
   }
 
-  return data.reply;
+  return {
+    reply: data.reply,
+    structuredData: data.structuredData,
+  };
+  */
 }
+

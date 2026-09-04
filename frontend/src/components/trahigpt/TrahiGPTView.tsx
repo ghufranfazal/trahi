@@ -22,6 +22,7 @@ import {
   sendTrahiGPTMessage,
 } from '../../services/trahiGPTService.ts';
 import { MarkdownRenderer } from './MarkdownRenderer.tsx';
+import { StructuredResponseRenderer } from './StructuredResponseRenderer.tsx';
 import { TrahiGPTInputBar } from './TrahiGPTInputBar.tsx';
 import { TrahiGPTSidebar } from './TrahiGPTSidebar.tsx';
 
@@ -144,12 +145,13 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
     setIsLoading(true);
 
     try {
-      const reply = await sendTrahiGPTMessage(userText, updatedMessages);
+      const response = await sendTrahiGPTMessage(userText, updatedMessages);
 
       const assistantMessage: ChatMessage = {
         id: `ast-msg-${Date.now()}`,
         sender: 'assistant',
-        text: reply,
+        text: typeof response === 'string' ? response : response.reply,
+        structuredData: typeof response === 'object' ? response.structuredData : undefined,
         timestamp: Date.now(),
       };
 
@@ -355,6 +357,8 @@ export const TrahiGPTView: React.FC<TrahiGPTViewProps> = ({
                     >
                       {isUser ? (
                         <p className="whitespace-pre-wrap">{message.text}</p>
+                      ) : message.structuredData ? (
+                        <StructuredResponseRenderer data={message.structuredData} />
                       ) : (
                         <MarkdownRenderer content={message.text} />
                       )}
